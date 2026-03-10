@@ -1,0 +1,501 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import time
+import os
+import solpoc as sol
+from datetime import datetime
+from multiprocessing import Pool, cpu_count
+
+
+def build_wl(wl):
+    if isinstance(wl, list) and len(wl) == 3:
+        start, stop, step = wl
+        return np.arange(start, stop, step)
+    return wl
+
+
+def nan_to_none(x):
+    if isinstance(x, (list, np.ndarray)):
+        return x  # laisser tel quel
+    if pd.isna(x):
+        return None
+    return x
+
+
+# paramètre hors de get_parameters
+
+cpu_used = 4  # Number of CPU used. /!\ be "raisonable", regarding the real number of CPU your computer
+
+# ordre exact des colonnes
+columns = [
+    "Wl",
+    "Ang",
+    "Sol_Spec",
+    "name_Sol_Spec",
+    "d_Stack",
+    "Mat_Stack",
+    "n_Stack",
+    "k_Stack",
+    "vf",
+    "Th_range",
+    "Th_Substrate",
+    "vf_range",
+    "Lambda_cut_1",
+    "Lambda_cut_2",
+    "pop_size",
+    "crossover_rate",
+    "f1",
+    "f2",
+    "mutation_DE",
+    "budget",
+    "nb_run",
+    "seed",
+    "algo",
+    "cost_function",
+    "selection",
+    "nb_layer",
+    "n_range",
+    "d_Stack_Opt",
+    "C",
+    "T_air",
+    "T_abs",
+    "Signal_H_eye",
+    "poids_PV",
+    "Signal_PV",
+    "Signal_Th",
+    "Signal_fit",
+    "Signal_fit_2",
+    "precision_AlgoG",
+    "mutation_rate",
+    "mutation_delta",
+    "evaluate_rate",
+    "Mat_Option",
+    "coherency_limit",
+    "Mode_choose_material",
+    "priority",
+    "not_use",
+]
+Comment = "Tutorial : anti-reflective coating for Si PV-Cell"
+running = True
+while running:
+    # All Parameters
+    """
+    Wl = None
+    Ang = None
+    Sol_Spec = None
+    name_Sol_Spec = None
+    d_Stack = None
+    Mat_Stack = None
+    n_Stack = None
+    k_Stack = None
+    vf = None
+    Th_range = None
+    Th_Substrate = None
+    vf_range = None
+    Lambda_cut_1 = None
+    Lambda_cut_2 = None
+    pop_size = None
+    crossover_rate = None
+    f1 = None
+    f2 = None
+    mutation_DE = None
+    budget = None
+    nb_run = None
+    seed = None
+    algo = None
+    cost_function = None
+    selection = None
+    nb_layer = None
+    n_range = None
+    d_Stack_Opt = None
+    C = None
+    T_air = None
+    T_abs = None
+    Signal_H_eye = None
+    poids_PV = None
+    Signal_PV = None
+    Signal_Th = None
+    Signal_fit = None
+    Signal_fit_2 = None
+    precision_AlgoG = None
+    mutation_rate = None
+    mutation_delta = None
+    evaluate_rate = None
+    Mat_Option = None
+    coherency_limit = None
+    Mode_choose_material = None
+    """
+
+    # lire json
+    df = pd.read_json("plan_test.json")
+
+    # appliquer à toutes les colonnes
+    for col in df.columns:
+        df[col] = df[col].apply(nan_to_none)
+
+    # ajouter colonnes manquantes avec NaN
+    for col in columns:
+        if col not in df.columns:
+            df[col] = np.nan
+
+    # remettre dans l'ordre voulu
+    df = df[columns]
+
+    # print(df)
+    df_filtered = df[df["not_use"] == True]
+
+    if df_filtered.empty:
+        running = False
+        print("Aucune ligne restante à traiter. Fin de la boucle.")
+        break  # sort de la boucle while
+    else:
+        min_priority = df_filtered["priority"].min()
+        first_min_row = df_filtered[df_filtered["priority"] == min_priority].iloc[0]
+        print(f"\nPremière ligne avec priorité minimale : \n{first_min_row}")
+
+    first_index = first_min_row.name  # .name renvoie l'index
+
+    print("\nDataFrame avant modification :")
+    print(df.loc[first_index, "not_use"])
+    # Mettre not_use à False dans le DataFrame original
+    df.at[first_index, "not_use"] = False
+
+    # Vérification
+    print("\nDataFrame après modification :")
+    print(df.loc[first_index, "not_use"])
+
+    df.to_json("plan_test.json", orient="records", indent=2)
+
+    # changement des variable a modifier
+    first_min_row["Wl"] = build_wl(first_min_row["Wl"])
+
+    # Pour selection
+    if first_min_row.get("selection") is not None:
+        selection = getattr(sol, first_min_row["selection"])
+        first_min_row["selection"] = getattr(sol, first_min_row["selection"])
+
+    # Pour algo
+    if first_min_row.get("algo") is not None:
+        algo = getattr(sol, first_min_row["algo"])
+        first_min_row["algo"] = getattr(sol, first_min_row["algo"])
+
+    # Pour cost_function
+    if first_min_row.get("cost_function") is not None:
+        cost_function = getattr(sol, first_min_row["cost_function"])
+        first_min_row["cost_function"] = getattr(sol, first_min_row["cost_function"])
+
+    print(
+        f"\nPremière ligne avec priorité minimale apres transformation : \n{first_min_row}"
+    )
+
+    # Open the solar spectrum
+    Wl_Sol, first_min_row["Sol_Spec"], name_Sol_Spec = sol.open_SolSpec(
+        "Materials/SolSpec.txt", "GT"
+    )
+
+    Wl_PV, first_min_row["Signal_PV"], name_PV = sol.open_Spec_Signal(
+        "Materials/PV_cells.txt", 1
+    )
+
+    if first_min_row["Mat_Stack"] is not None and first_min_row["Wl"] is not None:
+        first_min_row["n_Stack"], first_min_row["k_Stack"] = sol.Made_Stack(
+            first_min_row["Mat_Stack"], first_min_row["Wl"]
+        )
+
+    # ajouter les paramètres manquant
+    if first_min_row["Wl"] is not None and Wl_Sol is not None:
+        first_min_row["Sol_Spec"] = np.interp(
+            first_min_row["Wl"], Wl_Sol, first_min_row["Sol_Spec"]
+        )
+
+    # ajouter les paramètres manquant
+    if first_min_row["Wl"] is not None and Wl_PV is not None:
+        first_min_row["Signal_PV"] = np.interp(
+            first_min_row["Wl"], Wl_PV, first_min_row["Signal_PV"]
+        )
+
+    # mettre a jour les parametres
+    params = {}
+
+    params = {}
+
+    if first_min_row.get("Wl") is not None:
+        params["Wl"] = first_min_row["Wl"]
+
+    if first_min_row.get("Ang") is not None:
+        params["Ang"] = first_min_row["Ang"]
+
+    if first_min_row.get("Sol_Spec") is not None:
+        params["Sol_Spec"] = first_min_row["Sol_Spec"]
+
+    if first_min_row.get("name_Sol_Spec") is not None:
+        params["name_Sol_Spec"] = first_min_row["name_Sol_Spec"]
+
+    if first_min_row.get("d_Stack") is not None:
+        params["d_Stack"] = first_min_row["d_Stack"]
+
+    if first_min_row.get("Mat_Stack") is not None:
+        params["Mat_Stack"] = first_min_row["Mat_Stack"]
+
+    if first_min_row.get("n_Stack") is not None:
+        params["n_Stack"] = first_min_row["n_Stack"]
+
+    if first_min_row.get("k_Stack") is not None:
+        params["k_Stack"] = first_min_row["k_Stack"]
+
+    if first_min_row.get("vf") is not None:
+        params["vf"] = first_min_row["vf"]
+
+    if first_min_row.get("Th_range") is not None:
+        params["Th_range"] = first_min_row["Th_range"]
+
+    if first_min_row.get("Th_Substrate") is not None:
+        params["Th_Substrate"] = first_min_row["Th_Substrate"]
+
+    if first_min_row.get("vf_range") is not None:
+        params["vf_range"] = first_min_row["vf_range"]
+
+    if first_min_row.get("Lambda_cut_1") is not None:
+        params["Lambda_cut_1"] = first_min_row["Lambda_cut_1"]
+
+    if first_min_row.get("Lambda_cut_2") is not None:
+        params["Lambda_cut_2"] = first_min_row["Lambda_cut_2"]
+
+    if first_min_row.get("pop_size") is not None:
+        params["pop_size"] = first_min_row["pop_size"]
+
+    if first_min_row.get("crossover_rate") is not None:
+        params["crossover_rate"] = first_min_row["crossover_rate"]
+
+    if first_min_row.get("f1") is not None:
+        params["f1"] = first_min_row["f1"]
+
+    if first_min_row.get("f2") is not None and not pd.isna(first_min_row.get("f2")):
+        params["f2"] = first_min_row["f2"]
+
+    if first_min_row.get("mutation_DE") is not None:
+        params["mutation_DE"] = first_min_row["mutation_DE"]
+
+    if first_min_row.get("budget") is not None:
+        params["budget"] = first_min_row["budget"]
+
+    if first_min_row.get("nb_run") is not None and not pd.isna(
+        first_min_row.get("nb_run")
+    ):
+        params["nb_run"] = int(first_min_row["nb_run"])
+
+    if first_min_row.get("seed") is not None and not pd.isna(first_min_row.get("seed")):
+        params["seed"] = int(first_min_row["seed"])
+
+    if first_min_row.get("algo") is not None:
+        params["algo"] = first_min_row["algo"]
+
+    if first_min_row.get("cost_function") is not None:
+        params["cost_function"] = first_min_row["cost_function"]
+
+    if first_min_row.get("selection") is not None:
+        params["selection"] = first_min_row["selection"]
+
+    if first_min_row.get("nb_layer") is not None and not pd.isna(
+        first_min_row.get("nb_layer")
+    ):
+        params["nb_layer"] = int(first_min_row["nb_layer"])
+
+    if first_min_row.get("n_range") is not None:
+        params["n_range"] = first_min_row["n_range"]
+
+    if first_min_row.get("d_Stack_Opt") is not None:
+        params["d_Stack_Opt"] = first_min_row["d_Stack_Opt"]
+
+    if first_min_row.get("C") is not None:
+        params["C"] = first_min_row["C"]
+
+    if first_min_row.get("T_air") is not None:
+        params["T_air"] = first_min_row["T_air"]
+
+    if first_min_row.get("T_abs") is not None:
+        params["T_abs"] = first_min_row["T_abs"]
+
+    if first_min_row.get("Signal_H_eye") is not None:
+        params["Signal_H_eye"] = first_min_row["Signal_H_eye"]
+
+    if first_min_row.get("poids_PV") is not None:
+        params["poids_PV"] = first_min_row["poids_PV"]
+
+    if first_min_row.get("Signal_PV") is not None:
+        params["Signal_PV"] = first_min_row["Signal_PV"]
+
+    if first_min_row.get("Signal_Th") is not None:
+        params["Signal_Th"] = first_min_row["Signal_Th"]
+
+    if first_min_row.get("Signal_fit") is not None:
+        params["Signal_fit"] = first_min_row["Signal_fit"]
+
+    if first_min_row.get("Signal_fit_2") is not None:
+        params["Signal_fit_2"] = first_min_row["Signal_fit_2"]
+
+    if first_min_row.get("precision_AlgoG") is not None:
+        params["precision_AlgoG"] = first_min_row["precision_AlgoG"]
+
+    if first_min_row.get("mutation_rate") is not None:
+        params["mutation_rate"] = first_min_row["mutation_rate"]
+
+    if first_min_row.get("mutation_delta") is not None:
+        params["mutation_delta"] = first_min_row["mutation_delta"]
+
+    if first_min_row.get("evaluate_rate") is not None:
+        params["evaluate_rate"] = first_min_row["evaluate_rate"]
+
+    if first_min_row.get("Mat_Option") is not None:
+        params["Mat_Option"] = first_min_row["Mat_Option"]
+
+    if first_min_row.get("coherency_limit") is not None:
+        params["coherency_limit"] = first_min_row["coherency_limit"]
+
+    if first_min_row.get("Mode_choose_material") is not None:
+        params["Mode_choose_material"] = first_min_row["Mode_choose_material"]
+
+    # print(f"nb de layer : {params['nb_layer']}")
+    # print(f"n_range : {params['n_range']}")
+    # print(params)
+    parameters = sol.get_parameters(**params)
+
+    algo = first_min_row["algo"]
+
+    # creation of a function for multiprocessing
+    def run_problem_solution(i):
+        t1 = time.time()  # Time before the optimisation process
+        # Line below to be uncommented to slightly desynchronize the cores, if the seed is generated by reading the clock.
+        # time.sleep(np.random.random())
+        # Create a dictionary for this particular run so we can update the seed with the specific seed for this run
+        this_run_params = {}
+        this_run_params.update(parameters)
+        this_run_params["seed"] = parameters["seed_list"][i]
+        # Run the optimisation process (algo), with an evaluate method, a selection method and the parameters dictionary.
+        best_solution, dev, n_iter, seed = algo(
+            cost_function, selection, this_run_params
+        )
+        # calculate the time used
+        t2 = time.time()
+        temps = t2 - t1
+        # best solution is a stack. Evaluation of this stack
+        if type(best_solution) != list:
+            best_solution = best_solution.tolist()
+        best_solution = np.array(best_solution)
+        dev = np.array(dev)
+        perf = cost_function(best_solution, parameters)
+
+        print(
+            "I finished case #",
+            str(i + 1),
+            " in ",
+            "{:.1f}".format(temps),
+            " seconds.",
+            " Best: ",
+            "{:.4f}".format(perf),
+            flush=True,
+        )
+
+        return best_solution, perf, dev, n_iter, temps, seed
+
+    # Beginning of the main loop. The code must be in this loop to work in multiprocessing
+    if __name__ == "__main__":
+        print("Start of the program")
+        launch_time = datetime.now().strftime("%Hh-%Mm-%Ss")
+        print("Launched at " + launch_time)
+        print(
+            "Number of detected cores (logical/virtual, not necessarily physical): ",
+            cpu_count(),
+        )
+        print("Number of used cores: ", cpu_used)
+
+        sol.run_main(parameters)
+        directory = parameters.get("directory")
+
+        # creation of a pool
+        mp_pool = Pool(cpu_used)
+        # Solving each problem in the pool using multiprocessing
+        if first_min_row["nb_run"] is not None and not pd.isna(
+            first_min_row.get("nb_run")
+        ):
+            nb_run = int(first_min_row["nb_run"])
+
+        results = mp_pool.map(run_problem_solution, range(nb_run))
+
+        # Creation of empty lists, for use them later
+        tab_best_solution = []
+        tab_dev = []
+        tab_perf = []
+        tab_n_iter = []
+        tab_temps = []
+        tab_seed = []
+        # sleep 1 ms
+        time.sleep(1)
+        # result is an array containing the solutions returned by my.pool. I extract them and place them in different arrays
+        for i, (best_solution, perf, dev, n_iter, temps, seed) in enumerate(results):
+            # I add the values to the tables
+            tab_perf.append(perf)
+            tab_dev.append(dev)
+            tab_best_solution.append(best_solution)
+            tab_n_iter.append(n_iter)
+            tab_temps.append(temps)
+            tab_seed.append(seed)
+
+        Experience_results = {
+            "tab_perf": tab_perf,
+            "tab_dev": tab_dev,
+            "tab_best_solution": tab_best_solution,
+            "tab_n_iter": tab_n_iter,
+            "tab_temps": tab_temps,
+            "tab_seed": tab_seed,
+            "Comment": Comment,
+            "language": "en",
+            "name_Sol_Spec": name_Sol_Spec,
+            "launch_time": launch_time,
+            "cpu_used": cpu_used,
+            "nb_run": nb_run,
+        }  # End of the dict
+        end_of_time = time.time()
+        time_real = end_of_time - parameters["dawn_of_time"]
+        parameters.update({"time_real": time_real})
+
+        print("The total real time is: ", "{:.2f}".format(time_real), "seconds")
+        print(
+            "The processor calculation real time is: ",
+            "{:.2f}".format(sum(tab_temps)),
+            "seconds",
+        )
+        """_____________________Best results datas______________________"""
+
+        sol.Explain_results(parameters, Experience_results)
+
+        """_____________________Write results in a text file_________________"""
+
+        sol.Convergences_txt(parameters, Experience_results, directory)
+        sol.Generate_txt(parameters, Experience_results, directory)
+        sol.Optimization_txt(parameters, Experience_results, directory)
+        # sol.Simulation_amont_aval_txt(parameters, Experience_results, directory)
+        sol.Generate_materials_txt(parameters, Experience_results, directory)
+
+        """________________________Plot creation_________________________"""
+
+        sol.Reflectivity_plot(parameters, Experience_results, directory)
+        sol.Transmissivity_plot(parameters, Experience_results, directory)
+        sol.OpticalStackResponse_plot(parameters, Experience_results, directory)
+        sol.Convergence_plots(parameters, Experience_results, directory)
+        sol.Convergence_plots_2(parameters, Experience_results, directory)
+        sol.Consistency_curve_plot(parameters, Experience_results, directory)
+        sol.Optimum_thickness_plot(parameters, Experience_results, directory)
+        sol.Optimum_refractive_index_plot(parameters, Experience_results, directory)
+        sol.Volumetric_parts_plot(parameters, Experience_results, directory)
+        sol.Stack_plot(parameters, Experience_results, directory)
+
+
+# IMPORTANT
+# Tout les paramètres ne sont pas dans la fonctions get_parameters comme Wl_Sol, Sol_Spec, name_Sol_Spec
+# Donc a ajouter sinon crash
+# Penser a sortir les paramètres en trop de la fonctions get_parameters par la suite
+
+
+# modifier les valeur first_min_row[] qui sont des numpy.float en variable direct (int)
