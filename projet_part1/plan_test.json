@@ -122,7 +122,7 @@
     "coherency_limit":null,
     "Mode_choose_material":null,
     "priority":2,
-    "not_use":true
+    "not_use":false
   },
   {
     "Wl":[
@@ -185,6 +185,6 @@
     "coherency_limit":null,
     "Mode_choose_material":null,
     "priority":1,
-    "not_use":true
+    "not_use":false
   }
 ]

@@ -533,3 +533,6 @@ if __name__ == "__main__":
 # Avant de lancer le script, remplacer les False par True
 # pour exécuter les expériences souhaitées.
 # Les expériences sont ensuite exécutées par ordre de priorité.
+
+#Faudra aussi créer un `.gitignore` pour éviter de push les dossiers de résultats dans le repo. 
+# Comme ça on évite de remplir le dépôt avec des fichiers générés et surtout les conflits entre branches quand plusieurs runs sont lancés.
