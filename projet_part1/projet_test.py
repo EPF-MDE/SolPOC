@@ -524,3 +524,12 @@ if __name__ == "__main__":
 
 
 # modifier les valeur first_min_row[] qui sont des numpy.float en variable direct (int)
+
+
+# Dans plan_test.json :
+# not_use = True  -> l'expérience sera lancée
+# not_use = False -> l'expérience ne sera pas lancée
+#
+# Avant de lancer le script, remplacer les False par True
+# pour exécuter les expériences souhaitées.
+# Les expériences sont ensuite exécutées par ordre de priorité.
