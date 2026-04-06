@@ -198,52 +198,6 @@ if __name__ == "__main__":
 
     while running:
         # All Parameters
-        """
-        Wl = None
-        Ang = None
-        Sol_Spec = None
-        name_Sol_Spec = None
-        d_Stack = None
-        Mat_Stack = None
-        n_Stack = None
-        k_Stack = None
-        vf = None
-        Th_range = None
-        Th_Substrate = None
-        vf_range = None
-        Lambda_cut_1 = None
-        Lambda_cut_2 = None
-        pop_size = None
-        crossover_rate = None
-        f1 = None
-        f2 = None
-        mutation_DE = None
-        budget = None
-        nb_run = None
-        seed = None
-        algo = None
-        cost_function = None
-        selection = None
-        nb_layer = None
-        n_range = None
-        d_Stack_Opt = None
-        C = None
-        T_air = None
-        T_abs = None
-        Signal_H_eye = None
-        poids_PV = None
-        Signal_PV = None
-        Signal_Th = None
-        Signal_fit = None
-        Signal_fit_2 = None
-        precision_AlgoG = None
-        mutation_rate = None
-        mutation_delta = None
-        evaluate_rate = None
-        Mat_Option = None
-        coherency_limit = None
-        Mode_choose_material = None
-        """
 
         # lire json
         df = pd.read_json("plan_test.json")
@@ -525,14 +479,14 @@ if __name__ == "__main__":
 
 # modifier les valeur first_min_row[] qui sont des numpy.float en variable direct (int)
 
+# faire en sorte que l'utilisateur puisse modifier son spectre solaire directemment dans le fichier json
+# Regarder pour PV pour fair ela meme chose
 
-# Dans plan_test.json :
-# not_use = True  -> l'expérience sera lancée
-# not_use = False -> l'expérience ne sera pas lancée
-#
-# Avant de lancer le script, remplacer les False par True
-# pour exécuter les expériences souhaitées.
-# Les expériences sont ensuite exécutées par ordre de priorité.
+# hacher les plans d'expérience
 
-#Faudra aussi créer un `.gitignore` pour éviter de push les dossiers de résultats dans le repo. 
-# Comme ça on évite de remplir le dépôt avec des fichiers générés et surtout les conflits entre branches quand plusieurs runs sont lancés.
+# plan d'expérience 2 = bragg_mirror (ne fonctionne pas avec le code normal)
+# plan d'expérience 3 = PV_cell
+# plan d'expérience 1 = AR
+# potentiellement rajouter le code de optimization et de bragg_mirror pour faire en sorte que ca fonctionne pour ces 2 cas
+
+# rajouter les comment pour chaque plan
