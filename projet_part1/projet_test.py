@@ -145,6 +145,8 @@ cpu_used = 4  # Number of CPU used. /!\ be "raisonable", regarding the real numb
 # ordre exact des colonnes
 columns = [
     "Wl",
+    "open_SolSpec",
+    "open_Spec_Signal",
     "Ang",
     "Sol_Spec",
     "name_Sol_Spec",
@@ -199,7 +201,11 @@ if __name__ == "__main__":
     launch_time_global = datetime.now().strftime("%Y-%m-%d_%Hh%Mm%Ss")
 
     while running:
-        # All Parameters
+        # All Parameters who need to be initialize to None each run
+        Wl_Sol = None
+        Wl_PV = None
+        name_Sol_Spec = None
+        name_PV = None
 
         # lire json
         df = pd.read_json("plan_test.json")
@@ -267,16 +273,25 @@ if __name__ == "__main__":
         )
 
         # Open the solar spectrum
-        if first_min_row["open_SolSpec"] is not None:
+        if isinstance(first_min_row["open_SolSpec"], str):
+            args = [
+                a.strip().strip("'\"") for a in first_min_row["open_SolSpec"].split(",")
+            ]
             Wl_Sol, first_min_row["Sol_Spec"], first_min_row["name_Sol_Spec"] = getattr(
                 sol, "open_SolSpec"
-            )(first_min_row["open_SolSpec"])
+            )(*args)
             name_Sol_Spec = first_min_row["name_Sol_Spec"]
 
-        if first_min_row["open_Spec_Signal"] is not None:
+        if isinstance(first_min_row["open_Spec_Signal"], str):
+            args = [
+                a.strip().strip("'\"")
+                for a in first_min_row["open_Spec_Signal"].split(",")
+            ]
+            # convertir en int les arguments qui sont des nombres
+            args = [int(a) if a.isdigit() else a for a in args]
             Wl_PV, first_min_row["Signal_PV"], name_PV = getattr(
                 sol, "open_Spec_Signal"
-            )(first_min_row["open_Spec_Signal"])
+            )(*args)
 
         if first_min_row["Mat_Stack"] is not None and first_min_row["Wl"] is not None:
             first_min_row["n_Stack"], first_min_row["k_Stack"] = sol.Made_Stack(
@@ -417,9 +432,9 @@ if __name__ == "__main__":
 
 # hacher les plans d'expérience
 
-# plan d'expérience 2 = bragg_mirror (ne fonctionne pas avec le code normal)
-# plan d'expérience 3 = PV_cell
+# plan d'expérience 2 = PVcells
+# plan d'expérience 3 = template_low_e
 # plan d'expérience 1 = AR
 # potentiellement rajouter le code de optimization et de bragg_mirror pour faire en sorte que ca fonctionne pour ces 2 cas
 
-# rajouter les comment pour chaque plan
+# rajouter les comment pour chaque plan d'expérience dans le json
