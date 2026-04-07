@@ -59,7 +59,7 @@
     "coherency_limit": null,
     "Mode_choose_material": null,
     "priority": 3,
-    "not_use": true
+    "not_use": false
   },
   {
     "Wl": [
@@ -124,7 +124,7 @@
     "coherency_limit": null,
     "Mode_choose_material": null,
     "priority": 1,
-    "not_use": true
+    "not_use": false
   },
   {
     "Wl": [
@@ -197,7 +197,7 @@
     "coherency_limit": null,
     "Mode_choose_material": null,
     "priority": 1,
-    "not_use": true
+    "not_use": false
   },
   {
     "Wl": [
@@ -257,7 +257,7 @@
     "coherency_limit": null,
     "Mode_choose_material": null,
     "priority": 1,
-    "not_use": true
+    "not_use": false
   },
   {
     "Wl": "Wl_selectif",
@@ -301,9 +301,9 @@
     "nb_layer": null,
     "n_range": null,
     "d_Stack_Opt": null,
-    "C": 80,
-    "T_air": 293,
-    "T_abs": 573,
+    "C": 80.0,
+    "T_air": 293.0,
+    "T_abs": 573.0,
     "Signal_H_eye": null,
     "poids_PV": null,
     "Signal_PV": null,
@@ -318,6 +318,6 @@
     "coherency_limit": null,
     "Mode_choose_material": null,
     "priority": 2,
-    "not_use": true
+    "not_use": false
   }
 ]

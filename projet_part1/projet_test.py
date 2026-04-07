@@ -88,7 +88,7 @@ def main_for_parameters(
 
 def build_wl(Wl):
     if isinstance(Wl, str):
-        return getattr(sol, Wl)
+        return getattr(sol, Wl)()
     elif isinstance(Wl, list) and len(Wl) == 3:
         start, stop, step = Wl
         return np.arange(start, stop, step)
