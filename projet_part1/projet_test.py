@@ -297,143 +297,71 @@ if __name__ == "__main__":
 
         params = {}
 
-        if first_min_row.get("Wl") is not None:
-            params["Wl"] = first_min_row["Wl"]
+        # Champs simples (pas de vérification NaN supplémentaire)
+        simple_fields = [
+            "Wl",
+            "Ang",
+            "Sol_Spec",
+            "name_Sol_Spec",
+            "d_Stack",
+            "Mat_Stack",
+            "n_Stack",
+            "k_Stack",
+            "vf",
+            "Th_range",
+            "Th_Substrate",
+            "vf_range",
+            "Lambda_cut_1",
+            "Lambda_cut_2",
+            "pop_size",
+            "crossover_rate",
+            "f1",
+            "mutation_DE",
+            "budget",
+            "algo",
+            "cost_function",
+            "selection",
+            "n_range",
+            "d_Stack_Opt",
+            "C",
+            "T_air",
+            "T_abs",
+            "Signal_H_eye",
+            "poids_PV",
+            "Signal_PV",
+            "Signal_Th",
+            "Signal_fit",
+            "Signal_fit_2",
+            "precision_AlgoG",
+            "mutation_rate",
+            "mutation_delta",
+            "evaluate_rate",
+            "Mat_Option",
+            "coherency_limit",
+            "Mode_choose_material",
+        ]
 
-        if first_min_row.get("Ang") is not None:
-            params["Ang"] = first_min_row["Ang"]
+        # Champs avec vérification NaN + cast int
+        int_fields = ["nb_run", "seed", "nb_layer"]
 
-        if first_min_row.get("Sol_Spec") is not None:
-            params["Sol_Spec"] = first_min_row["Sol_Spec"]
+        # Champs avec vérification NaN sans cast
+        nan_fields = ["f2"]
 
-        if first_min_row.get("name_Sol_Spec") is not None:
-            params["name_Sol_Spec"] = first_min_row["name_Sol_Spec"]
+        for field in simple_fields:
+            if first_min_row.get(field) is not None:
+                params[field] = first_min_row[field]
 
-        if first_min_row.get("d_Stack") is not None:
-            params["d_Stack"] = first_min_row["d_Stack"]
+        for field in int_fields:
+            if first_min_row.get(field) is not None and not pd.isna(
+                first_min_row.get(field)
+            ):
+                params[field] = int(first_min_row[field])
 
-        if first_min_row.get("Mat_Stack") is not None:
-            params["Mat_Stack"] = first_min_row["Mat_Stack"]
-
-        if first_min_row.get("n_Stack") is not None:
-            params["n_Stack"] = first_min_row["n_Stack"]
-
-        if first_min_row.get("k_Stack") is not None:
-            params["k_Stack"] = first_min_row["k_Stack"]
-
-        if first_min_row.get("vf") is not None:
-            params["vf"] = first_min_row["vf"]
-
-        if first_min_row.get("Th_range") is not None:
-            params["Th_range"] = first_min_row["Th_range"]
-
-        if first_min_row.get("Th_Substrate") is not None:
-            params["Th_Substrate"] = first_min_row["Th_Substrate"]
-
-        if first_min_row.get("vf_range") is not None:
-            params["vf_range"] = first_min_row["vf_range"]
-
-        if first_min_row.get("Lambda_cut_1") is not None:
-            params["Lambda_cut_1"] = first_min_row["Lambda_cut_1"]
-
-        if first_min_row.get("Lambda_cut_2") is not None:
-            params["Lambda_cut_2"] = first_min_row["Lambda_cut_2"]
-
-        if first_min_row.get("pop_size") is not None:
-            params["pop_size"] = first_min_row["pop_size"]
-
-        if first_min_row.get("crossover_rate") is not None:
-            params["crossover_rate"] = first_min_row["crossover_rate"]
-
-        if first_min_row.get("f1") is not None:
-            params["f1"] = first_min_row["f1"]
-
-        if first_min_row.get("f2") is not None and not pd.isna(first_min_row.get("f2")):
-            params["f2"] = first_min_row["f2"]
-
-        if first_min_row.get("mutation_DE") is not None:
-            params["mutation_DE"] = first_min_row["mutation_DE"]
-
-        if first_min_row.get("budget") is not None:
-            params["budget"] = first_min_row["budget"]
-
-        if first_min_row.get("nb_run") is not None and not pd.isna(
-            first_min_row.get("nb_run")
-        ):
-            params["nb_run"] = int(first_min_row["nb_run"])
-
-        if first_min_row.get("seed") is not None and not pd.isna(
-            first_min_row.get("seed")
-        ):
-            params["seed"] = int(first_min_row["seed"])
-
-        if first_min_row.get("algo") is not None:
-            params["algo"] = first_min_row["algo"]
-
-        if first_min_row.get("cost_function") is not None:
-            params["cost_function"] = first_min_row["cost_function"]
-
-        if first_min_row.get("selection") is not None:
-            params["selection"] = first_min_row["selection"]
-
-        if first_min_row.get("nb_layer") is not None and not pd.isna(
-            first_min_row.get("nb_layer")
-        ):
-            params["nb_layer"] = int(first_min_row["nb_layer"])
-
-        if first_min_row.get("n_range") is not None:
-            params["n_range"] = first_min_row["n_range"]
-
-        if first_min_row.get("d_Stack_Opt") is not None:
-            params["d_Stack_Opt"] = first_min_row["d_Stack_Opt"]
-
-        if first_min_row.get("C") is not None:
-            params["C"] = first_min_row["C"]
-
-        if first_min_row.get("T_air") is not None:
-            params["T_air"] = first_min_row["T_air"]
-
-        if first_min_row.get("T_abs") is not None:
-            params["T_abs"] = first_min_row["T_abs"]
-
-        if first_min_row.get("Signal_H_eye") is not None:
-            params["Signal_H_eye"] = first_min_row["Signal_H_eye"]
-
-        if first_min_row.get("poids_PV") is not None:
-            params["poids_PV"] = first_min_row["poids_PV"]
-
-        if first_min_row.get("Signal_PV") is not None:
-            params["Signal_PV"] = first_min_row["Signal_PV"]
-
-        if first_min_row.get("Signal_Th") is not None:
-            params["Signal_Th"] = first_min_row["Signal_Th"]
-
-        if first_min_row.get("Signal_fit") is not None:
-            params["Signal_fit"] = first_min_row["Signal_fit"]
-
-        if first_min_row.get("Signal_fit_2") is not None:
-            params["Signal_fit_2"] = first_min_row["Signal_fit_2"]
-
-        if first_min_row.get("precision_AlgoG") is not None:
-            params["precision_AlgoG"] = first_min_row["precision_AlgoG"]
-
-        if first_min_row.get("mutation_rate") is not None:
-            params["mutation_rate"] = first_min_row["mutation_rate"]
-
-        if first_min_row.get("mutation_delta") is not None:
-            params["mutation_delta"] = first_min_row["mutation_delta"]
-
-        if first_min_row.get("evaluate_rate") is not None:
-            params["evaluate_rate"] = first_min_row["evaluate_rate"]
-
-        if first_min_row.get("Mat_Option") is not None:
-            params["Mat_Option"] = first_min_row["Mat_Option"]
-
-        if first_min_row.get("coherency_limit") is not None:
-            params["coherency_limit"] = first_min_row["coherency_limit"]
-
-        if first_min_row.get("Mode_choose_material") is not None:
-            params["Mode_choose_material"] = first_min_row["Mode_choose_material"]
+        for field in nan_fields:
+            if first_min_row.get(field) is not None and not pd.isna(
+                first_min_row.get(field)
+            ):
+                params[field] = first_min_row[field]
 
         # print(f"nb de layer : {params['nb_layer']}")
         # print(f"n_range : {params['n_range']}")
