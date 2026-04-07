@@ -490,3 +490,6 @@ if __name__ == "__main__":
 # potentiellement rajouter le code de optimization et de bragg_mirror pour faire en sorte que ca fonctionne pour ces 2 cas
 
 # rajouter les comment pour chaque plan
+
+# Faudra aussi créer un `.gitignore` pour éviter de push les dossiers de résultats dans le repo.
+# Comme ça on évite de remplir le dépôt avec des fichiers générés et surtout les conflits entre branches quand plusieurs runs sont lancés.
