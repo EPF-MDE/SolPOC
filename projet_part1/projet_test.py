@@ -267,13 +267,15 @@ if __name__ == "__main__":
         )
 
         # Open the solar spectrum
-        Wl_Sol, first_min_row["Sol_Spec"], name_Sol_Spec = sol.open_SolSpec(
-            "Materials/SolSpec.txt", "GT"
-        )
+        if first_min_row["open_SolSpec"] is not None:
+            Wl_Sol, first_min_row["Sol_Spec"], first_min_row["name_Sol_Spec"] = getattr(
+                sol, "open_SolSpec"
+            )(first_min_row["open_SolSpec"])
 
-        Wl_PV, first_min_row["Signal_PV"], name_PV = sol.open_Spec_Signal(
-            "Materials/PV_cells.txt", 1
-        )
+        if first_min_row["open_Spec_Signal"] is not None:
+            Wl_PV, first_min_row["Signal_PV"], name_PV = getattr(
+                sol, "open_Spec_Signal"
+            )(first_min_row["open_Spec_Signal"])
 
         if first_min_row["Mat_Stack"] is not None and first_min_row["Wl"] is not None:
             first_min_row["n_Stack"], first_min_row["k_Stack"] = sol.Made_Stack(
