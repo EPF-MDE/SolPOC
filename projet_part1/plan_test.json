@@ -5,7 +5,7 @@
       2505,
       5
     ],
-    "open_SolSpec": "'Materials\/SolSpec.txt', 'GT'",
+    "open_SolSpec": "'Materials/SolSpec.txt', 'GT'",
     "open_Spec_Signal": null,
     "Ang": 0,
     "Sol_Spec": null,
@@ -67,8 +67,8 @@
       2505,
       5
     ],
-    "open_SolSpec": "'Materials\/SolSpec.txt', 'GT'",
-    "open_Spec_Signal": "'Materials\/PV_cells.txt', 1",
+    "open_SolSpec": "'Materials/SolSpec.txt', 'GT'",
+    "open_Spec_Signal": "'Materials/PV_cells.txt', 1",
     "Ang": 0,
     "Sol_Spec": null,
     "name_Sol_Spec": null,
@@ -132,7 +132,7 @@
       1505,
       5
     ],
-    "open_SolSpec": "'Materials\/SolSpec.txt', 'GT'",
+    "open_SolSpec": "'Materials/SolSpec.txt', 'GT'",
     "open_Spec_Signal": null,
     "Ang": 0,
     "Sol_Spec": null,

@@ -6,6 +6,7 @@ import os
 import solpoc as sol
 from datetime import datetime
 from multiprocessing import Pool, cpu_count
+import json
 
 
 def main_for_parameters(
@@ -100,6 +101,16 @@ def nan_to_none(x):
     if pd.isna(x):
         return None
     return x
+
+
+def convert_nan(obj):
+    if isinstance(obj, float) and pd.isna(obj):
+        return None
+    if isinstance(obj, dict):
+        return {k: convert_nan(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [convert_nan(v) for v in obj]
+    return obj
 
 
 # creation of a function for multiprocessing
@@ -201,7 +212,7 @@ if __name__ == "__main__":
     launch_time_global = datetime.now().strftime("%Y-%m-%d_%Hh%Mm%Ss")
 
     while running:
-        # All Parameters who need to be initialize to None each run
+        # All Parameters who need to be initialize to None each ru
         Wl_Sol = None
         Wl_PV = None
         name_Sol_Spec = None
@@ -246,10 +257,23 @@ if __name__ == "__main__":
         print("\nDataFrame après modification :")
         print(df.loc[first_index, "not_use"])
 
-        df.to_json("plan_test.json", orient="records", indent=2)
+        with open("plan_test.json", "w", encoding="utf-8") as f:
+            json.dump(
+                convert_nan(df.to_dict(orient="records")),
+                f,
+                indent=2,
+                ensure_ascii=False,
+            )
 
         # changement des variable a modifier
         first_min_row["Wl"] = build_wl(first_min_row["Wl"])
+
+        # utilise la fonction de Mat_Stack si Mat_Stack est un str
+        if isinstance(first_min_row["Mat_Stack"], str):
+            func_name = first_min_row["Mat_Stack"].split("(")[0]
+            args_str = first_min_row["Mat_Stack"].split("(")[1].rstrip(")")
+            args = eval(f"[{args_str}]")
+            first_min_row["Mat_Stack"] = getattr(sol, func_name)(*args)
 
         # Pour selection
         if first_min_row.get("selection") is not None:
