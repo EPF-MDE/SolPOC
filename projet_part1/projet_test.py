@@ -85,11 +85,13 @@ def main_for_parameters(
     sol.Stack_plot(parameters, Experience_results, directory)
 
 
-def build_wl(wl):
-    if isinstance(wl, list) and len(wl) == 3:
-        start, stop, step = wl
+def build_wl(Wl):
+    if Wl == "Wl_selectif":
+        Wl = getattr(sol, "Wl_selectif")
+    elif isinstance(Wl, list) and len(Wl) == 3:
+        start, stop, step = Wl
         return np.arange(start, stop, step)
-    return wl
+    return Wl
 
 
 def nan_to_none(x):
