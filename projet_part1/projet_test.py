@@ -271,6 +271,7 @@ if __name__ == "__main__":
             Wl_Sol, first_min_row["Sol_Spec"], first_min_row["name_Sol_Spec"] = getattr(
                 sol, "open_SolSpec"
             )(first_min_row["open_SolSpec"])
+            name_Sol_Spec = first_min_row["name_Sol_Spec"]
 
         if first_min_row["open_Spec_Signal"] is not None:
             Wl_PV, first_min_row["Signal_PV"], name_PV = getattr(
