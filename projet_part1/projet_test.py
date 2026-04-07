@@ -87,8 +87,8 @@ def main_for_parameters(
 
 
 def build_wl(Wl):
-    if Wl == "Wl_selectif":
-        Wl = getattr(sol, "Wl_selectif")
+    if isinstance(Wl, str):
+        return getattr(sol, Wl)
     elif isinstance(Wl, list) and len(Wl) == 3:
         start, stop, step = Wl
         return np.arange(start, stop, step)
@@ -459,6 +459,8 @@ if __name__ == "__main__":
 # plan d'expérience 2 = PVcells
 # plan d'expérience 3 = template_low_e
 # plan d'expérience 1 = AR
+# plan d'expérience 4 = spectral splitting
+# plan d'expérience 5 = selective coating
 # potentiellement rajouter le code de optimization et de bragg_mirror pour faire en sorte que ca fonctionne pour ces 2 cas
 
 # rajouter les comment pour chaque plan d'expérience dans le json
