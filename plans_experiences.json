@@ -2,22 +2,22 @@
     {
         "template": "AR",
         "parameters": {
-            "Comment": "test",
-            "Mat_Stack": "ff",
-            "Wl (start, stop, step)": "ff",
-            "Th_Substrate (nm)": "ff",
-            "Th_range (min, max)": "ff",
-            "n_range (min, max)": "ff",
-            "nb_layer": "ff",
-            "Ang (°)": "ff",
-            "pop_size": "ff",
-            "crossover_rate": "ff",
-            "f1": "ff",
-            "mutation_DE": "ff",
-            "budget": "ff",
-            "nb_run": "ff",
-            "cpu_used": "ff",
-            "seed": "ff"
+            "Comment": "fzemigf",
+            "Mat_Stack": "fzùogfzeçègf",
+            "Wl (start, stop, step)": "fefe",
+            "Th_Substrate (nm)": "efe",
+            "Th_range (min, max)": "fe",
+            "n_range (min, max)": "efefefef",
+            "nb_layer": "efefe",
+            "Ang (°)": "efefef",
+            "pop_size": "efef",
+            "crossover_rate": "efef",
+            "f1": "efef",
+            "mutation_DE": "zzd",
+            "budget": "zdzdzdzdzd",
+            "nb_run": "zdzd",
+            "cpu_used": "zdz",
+            "seed": "zdzd"
         }
     }
 ]
