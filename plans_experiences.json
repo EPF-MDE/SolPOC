@@ -1,45 +1,21 @@
 [
     {
-        "template": "Spectral Splitting",
+        "template": "Bragg Mirror",
         "parameters": {
-            "Comment": "\"Exemple of spectral-splitting coating (dichroic mirror) for PV-CST, 20 layers of SiO2/TiO2\"",
-            "Mat_Stack": "sol.write_stack_period([\"BK7\"], [\"TiO2\", \"SiO2\"], 10)",
-            "Wl (start, stop, step)": "np.arange(280,2505,5)",
+            "Comment": "\"A 4 periodic layers of Bragg mirror, deposited on 1mm BK7 glass\"",
+            "Mat_Stack": "[\"BK7\", \"SiO2\", \"TiO2\", \"SiO2\", \"TiO2\", \"SiO2\", \"TiO2\", \"SiO2\", \"TiO2\"]",
+            "Wl (start, stop, step)": "np.arange(400, 800,5)",
             "Th_Substrate (nm)": "1e6",
-            "Th_range (min, max)": "(0, 250)",
-            "vf_range (min, max)": "(0, 1.0)",
+            "Th_range (min, max)": "(0, 200)",
             "Ang (°)": "0",
-            "lambda_cut_1 (nm)": "500",
-            "lambda_cut_2 (nm)": "1000",
             "pop_size": "30",
             "crossover_rate": "0.5",
             "f1": "f1,",
-            "f2": "1.0, 1.0",
-            "mutation_DE": "\"rand_1\"",
-            "budget": "30000",
-            "nb_run": "4",
-            "cpu_used": "4",
-            "seed": "None"
-        }
-    },
-    {
-        "template": "PV Cells",
-        "parameters": {
-            "Comment": "\"Tutorial : anti-reflective coating for Si PV-Cell\"",
-            "Mat_Stack": "[\"Si\", \"TiO2\", \"ZnO\", \"Al2O3\"]",
-            "Wl (start, stop, step)": "np.arange(280,2505,5)",
-            "Th_Substrate (nm)": "1e6",
-            "Th_range (min, max)": "(0, 300)",
-            "vf_range (min, max)": "(0, 1.0)",
-            "Ang (°)": "0",
-            "pop_size": "30",
-            "crossover_rate": "0.5",
-            "f1": "1.0",
-            "mutation_DE": "\"rand_1\"",
-            "budget": "1500",
+            "f2": "0.9, 0.8",
+            "mutation_DE": "\"current_to_best\"",
+            "budget": "2000",
             "nb_run": "8",
-            "cpu_used": "8",
-            "seed": "None"
+            "seed": "2905804230"
         }
     }
 ]

@@ -12,7 +12,7 @@ class SolpocInterface(tk.Tk):
 
         # === FENETRE PRINCIPALE ===
         self.title("SOLPOC UI")  # titre de la fenêtre
-        self.geometry("1000x700")  # taille de la fenêtre
+        self.geometry("1100x600")  # taille de la fenêtre
         self.configure(bg="grey")  # couleur de fond
 
         # Variables
@@ -320,7 +320,6 @@ class SolpocInterface(tk.Tk):
         )
 
     def show_parameters_view(self):
-        # Vérifie qu'un template est sélectionné
         if not self.selected_template:
             messagebox.showwarning(
                 "Attention",
@@ -328,7 +327,6 @@ class SolpocInterface(tk.Tk):
             )
             return
 
-        # Supprime le contenu actuel
         self.clear_content()
         defaults = self.load_defaults(self.selected_template)
 
@@ -336,17 +334,22 @@ class SolpocInterface(tk.Tk):
         container = tk.Frame(self.content_frame, bg="black")
         container.pack(fill="both", expand=True)
 
-        # Titre de la page
+        # Titre
         self.create_label(
             container, f"Paramètres - {self.selected_template}", ("Arial", 16, "bold")
         ).pack(pady=20)
 
-        # === Zone scrollable pour le formulaire ===
-        canvas = tk.Canvas(container, bg="black", highlightthickness=0)
-        scrollbar = tk.Scrollbar(container, orient="vertical", command=canvas.yview)
+        # Frame pour la zone scrollable
+        scroll_container = tk.Frame(container, bg="black")
+        scroll_container.pack(fill="both", expand=True)
+
+        # Zone scrollable
+        canvas = tk.Canvas(scroll_container, bg="black", highlightthickness=0)
+        scrollbar = tk.Scrollbar(
+            scroll_container, orient="vertical", command=canvas.yview
+        )
         scroll_frame = tk.Frame(canvas, bg="black")
 
-        # Met à jour la zone scrollable quand le formulaire change
         scroll_frame.bind(
             "<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
         )
@@ -354,31 +357,34 @@ class SolpocInterface(tk.Tk):
         canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
 
-        # Affiche le formulaire avec scrollbar
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
-        # Crée les champs de saisie pour chaque paramètre
+        # Grille avec 3 paramètres par ligne
         self.parameter_entries = {}
         parameters = self.templates_config[self.selected_template]
+        cols_per_row = 3
 
         for i, param_name in enumerate(parameters):
-            # Affiche le nom du paramètre
+            row = i // cols_per_row
+            col = (i % cols_per_row) * 2
+
             self.create_label(scroll_frame, param_name).grid(
-                row=i, column=0, padx=10, pady=5, sticky="w"
+                row=row, column=col, padx=10, pady=8, sticky="w"
             )
-            # Crée le champ de saisie
-            entry = tk.Entry(scroll_frame, width=30)
-            entry.grid(row=i, column=1, padx=10, pady=5)
-            # Les deux lignes en dessous utilisent defaults (L.329) pour pré-remplir les paramètres
+            entry = tk.Entry(scroll_frame, width=25)
+            entry.grid(row=row, column=col + 1, padx=10, pady=8)
             if param_name in defaults:
                 entry.insert(0, defaults[param_name])
             self.parameter_entries[param_name] = entry
 
-        # Bouton pour valider les paramètres
+        # Frame séparé pour le bouton en bas centré
+        bottom_frame = tk.Frame(container, bg="black")
+        bottom_frame.pack(fill="x", pady=20)
+
         tk.Button(
-            container, text="Valider", width=20, command=self.validate_parameters
-        ).pack(pady=20)
+            bottom_frame, text="Valider", width=20, command=self.validate_parameters
+        ).pack(anchor="center")
 
     def validate_parameters(self):
         # === RECUPERE LES VALEURS ENTREES ===
