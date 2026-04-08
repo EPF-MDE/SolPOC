@@ -418,7 +418,7 @@ class SolpocInterface(tk.Tk):
         ).pack(anchor="center")
 
     def validate_parameters(self):
-        # === RECUPERE LES VALEURS ENTREES ===
+        # recupere les valeurs entrées
         parameter_values = {}
 
         for param_name, entry in self.parameter_entries.items():
@@ -430,7 +430,15 @@ class SolpocInterface(tk.Tk):
                     "Attention", f"Veuillez remplir le champ : {param_name}"
                 )
                 return
-
+            
+            # Verification du type
+            if not self.validate_type(self, param_name, value):
+                messagebox.showwarning(
+                    "Type incorrect", 
+                    f"Le champ '{param_name}' n'a pas le bon type"
+                )
+                return 
+            
             parameter_values[param_name] = value
 
         # création du plan d'expériences
