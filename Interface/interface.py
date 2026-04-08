@@ -1,6 +1,9 @@
 import tkinter as tk
 from tkinter import messagebox
 import json
+import re
+import os
+from sympy import content
 
 
 class SolpocInterface(tk.Tk):
@@ -152,6 +155,70 @@ class SolpocInterface(tk.Tk):
         self.create_content_area()  # crée la zone principale
         self.show_template_view()  # affiche la première vue
 
+        # Ajout de la fonctionalité de remplissage automatique des paramètres
+        self.file_map = {
+            "AR": "template_AR.py",
+            "Bragg Mirror": "template_Bragg_mirror.py",
+            "Low-e": "template_low_e.py",
+            "Optimization with Materials": "template_optimization_with_materials.py",
+            "PV Cells": "template_PVcells.py",
+            "Selective Coating": "template_selective_coating.py",
+            "Spectral Splitting": "template_spectral_splitting.py",
+        }
+
+        self.param_to_var = {
+            "Comment": "Comment",
+            "Mat_Stack": "Mat_Stack",
+            "Wl (start, stop, step)": "Wl",
+            "Th_Substrate (nm)": "Th_Substrate",
+            "Th_range (min, max)": "Th_range",
+            "n_range (min, max)": "n_range",
+            "nb_layer": "nb_layer",
+            "Ang (°)": "Ang",
+            "pop_size": "pop_size",
+            "crossover_rate": "crossover_rate",
+            "f1": "f1",
+            "f2": "f2",
+            "mutation_DE": "mutation_DE",
+            "budget": "budget",
+            "nb_run": "nb_run",
+            "cpu_used": "cpu_used",
+            "seed": "seed",
+            "d_Stack_Opt": "d_Stack_Opt",
+            "Lambda_cut_1 (nm)": "Lambda_cut_1",
+            "Mat_Option": "Mat_Option",
+            "Mode_choose_material": "Mode_choose_material",
+            "vf_range (min, max)": "vf_range",
+            "C": "C",
+            "T_air (K)": "T_air",
+            "T_abs (K)": "T_abs",
+            "lambda_cut_1 (nm)": "lambda_cut_1",
+            "lambda_cut_2 (nm)": "lambda_cut_2",
+        }
+
+    def load_defaults(self, template_name):
+        filename = self.file_map.get(template_name)
+        if not filename:
+            return {}
+
+        filepath = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "..", "Examples", filename
+        )
+
+        if not os.path.exists(filepath):
+            return {}
+
+        with open(filepath, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        defaults = {}
+        for param, var in self.param_to_var.items():
+            match = re.search(rf"{var}\s*=\s*([^#\n]+)", content)
+            if match:
+                defaults[param] = match.group(1).strip()
+
+        return defaults
+
     def create_header(self):
         # Barre du haut
         self.header_frame = tk.Frame(self, bg="black", height=150)  # zone du haut
@@ -263,6 +330,7 @@ class SolpocInterface(tk.Tk):
 
         # Supprime le contenu actuel
         self.clear_content()
+        defaults = self.load_defaults(self.selected_template)
 
         # Conteneur principal
         container = tk.Frame(self.content_frame, bg="black")
@@ -302,6 +370,9 @@ class SolpocInterface(tk.Tk):
             # Crée le champ de saisie
             entry = tk.Entry(scroll_frame, width=30)
             entry.grid(row=i, column=1, padx=10, pady=5)
+            # Les deux lignes en dessous utilisent defaults (L.329) pour pré-remplir les paramètres
+            if param_name in defaults:
+                entry.insert(0, defaults[param_name])
             self.parameter_entries[param_name] = entry
 
         # Bouton pour valider les paramètres
