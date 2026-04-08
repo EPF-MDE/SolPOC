@@ -448,7 +448,7 @@ class SolpocInterface(tk.Tk):
         self.show_template_view()  # retour à la page principale
 
     # Fonction qui verifie le type
-    def validate_parameter(self, param_name, value):
+    def validate_type(self, param_name, value):
         param_type = self.param_type.get(param_name, "text")
         value = value.strip()
 
