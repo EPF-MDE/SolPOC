@@ -502,6 +502,17 @@ class SolpocInterface(tk.Tk):
             )
         return True
     
+    def value_list(self, value):
+        try:
+            values = ast.literal_eval(value)
+            if not isinstance(values, list):
+                return False
+            for item in values:
+                if not isinstance(item, (int, float)):
+                    return False
+            return True
+        except (ValueError, SyntaxError):
+            return False
 
     def save_to_json(self):
         # sauvegardee dans le json
