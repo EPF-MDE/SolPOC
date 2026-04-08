@@ -4,6 +4,7 @@ import json
 import re
 import os
 from sympy import content
+import ast
 
 
 class SolpocInterface(tk.Tk):
@@ -12,7 +13,7 @@ class SolpocInterface(tk.Tk):
 
         # === FENETRE PRINCIPALE ===
         self.title("SOLPOC UI")  # titre de la fenêtre
-        self.geometry("1000x700")  # taille de la fenêtre
+        self.geometry("1100x600")  # taille de la fenêtre
         self.configure(bg="grey")  # couleur de fond
 
         # Variables
@@ -196,6 +197,36 @@ class SolpocInterface(tk.Tk):
             "lambda_cut_2 (nm)": "lambda_cut_2",
         }
 
+        self.param_type = {
+            "Comment" : "text",
+            "Mat_Stack" : "list",
+            "Mat_Option" : "list",
+            "Wl (start, stop, step)" : "wavelength",
+            "Th_Substrate (nm)" : "number",
+            "Th_range (min, max)" : "range",
+            "n_range (min, max)" : "range",
+            "vf_range (min, max)" : "range",
+            "nb_layer" : "int",
+            "Ang (°)" : "number",
+            "d_Stack_Opt" : "list",
+            "Lambda_cut_1 (nm)" : "number",
+            "lambda_cut_1 (nm)" : "number",
+            "lambda_cut_2 (nm)" : "number",
+            "C" : "number",
+            "T_air (K)" : "number",
+            "T_abs (K)" : "number",
+            "pop_size" : "int",
+            "budget" : "int",
+            "nb_run" : "int",
+            "cpu_used" : "int",
+            "seed" : "optional_int",
+            "crossover_rate" : "rate",
+            "f1" : "number",
+            "f2" : "number",
+            "mutation_DE" : "text",
+            "Mode_choose_material" : "text",
+        }
+
     def load_defaults(self, template_name):
         filename = self.file_map.get(template_name)
         if not filename:
@@ -320,7 +351,6 @@ class SolpocInterface(tk.Tk):
         )
 
     def show_parameters_view(self):
-        # Vérifie qu'un template est sélectionné
         if not self.selected_template:
             messagebox.showwarning(
                 "Attention",
@@ -328,7 +358,6 @@ class SolpocInterface(tk.Tk):
             )
             return
 
-        # Supprime le contenu actuel
         self.clear_content()
         defaults = self.load_defaults(self.selected_template)
 
@@ -336,17 +365,22 @@ class SolpocInterface(tk.Tk):
         container = tk.Frame(self.content_frame, bg="black")
         container.pack(fill="both", expand=True)
 
-        # Titre de la page
+        # Titre
         self.create_label(
             container, f"Paramètres - {self.selected_template}", ("Arial", 16, "bold")
         ).pack(pady=20)
 
-        # === Zone scrollable pour le formulaire ===
-        canvas = tk.Canvas(container, bg="black", highlightthickness=0)
-        scrollbar = tk.Scrollbar(container, orient="vertical", command=canvas.yview)
+        # Frame pour la zone scrollable
+        scroll_container = tk.Frame(container, bg="black")
+        scroll_container.pack(fill="both", expand=True)
+
+        # Zone scrollable
+        canvas = tk.Canvas(scroll_container, bg="black", highlightthickness=0)
+        scrollbar = tk.Scrollbar(
+            scroll_container, orient="vertical", command=canvas.yview
+        )
         scroll_frame = tk.Frame(canvas, bg="black")
 
-        # Met à jour la zone scrollable quand le formulaire change
         scroll_frame.bind(
             "<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
         )
@@ -354,31 +388,34 @@ class SolpocInterface(tk.Tk):
         canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
 
-        # Affiche le formulaire avec scrollbar
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
-        # Crée les champs de saisie pour chaque paramètre
+        # Grille avec 3 paramètres par ligne
         self.parameter_entries = {}
         parameters = self.templates_config[self.selected_template]
+        cols_per_row = 3
 
         for i, param_name in enumerate(parameters):
-            # Affiche le nom du paramètre
+            row = i // cols_per_row
+            col = (i % cols_per_row) * 2
+
             self.create_label(scroll_frame, param_name).grid(
-                row=i, column=0, padx=10, pady=5, sticky="w"
+                row=row, column=col, padx=10, pady=8, sticky="w"
             )
-            # Crée le champ de saisie
-            entry = tk.Entry(scroll_frame, width=30)
-            entry.grid(row=i, column=1, padx=10, pady=5)
-            # Les deux lignes en dessous utilisent defaults (L.329) pour pré-remplir les paramètres
+            entry = tk.Entry(scroll_frame, width=25)
+            entry.grid(row=row, column=col + 1, padx=10, pady=8)
             if param_name in defaults:
                 entry.insert(0, defaults[param_name])
             self.parameter_entries[param_name] = entry
 
-        # Bouton pour valider les paramètres
+        # Frame séparé pour le bouton en bas centré
+        bottom_frame = tk.Frame(container, bg="black")
+        bottom_frame.pack(fill="x", pady=20)
+
         tk.Button(
-            container, text="Valider", width=20, command=self.validate_parameters
-        ).pack(pady=20)
+            bottom_frame, text="Valider", width=20, command=self.validate_parameters
+        ).pack(anchor="center")
 
     def validate_parameters(self):
         # === RECUPERE LES VALEURS ENTREES ===
@@ -409,6 +446,62 @@ class SolpocInterface(tk.Tk):
         messagebox.showinfo("Succès", "Le plan d'expériences a été enregistré.")
 
         self.show_template_view()  # retour à la page principale
+
+    # Fonction qui verifie le type
+    def validate_parameter(self, param_name, value):
+        param_type = self.param_type.get(param_name, "text")
+        value = value.strip()
+
+        if param_type == "text":
+            return value != ""
+        
+        if param_type == "int":
+            return value.isdigit() and int(value) > 0
+        
+        if param_type == "optional_int":
+            return value == "None" or (value.isdigit() and int(value) > 0)
+
+        if param_type == "number":
+            try:
+                float(value)
+                return True
+            except ValueError:
+                return False
+        
+        if param_type == "rate":
+            try:
+                number = float(value)
+                return 0 <= number <= 1
+            except ValueError:
+                return False
+        
+        if param_type == "range":
+            try:
+                values = ast.literal_eval(value)
+                if not isinstance(values, tuple):
+                    return False
+                if len(values) != 2:
+                    return False
+                min_value, max_value = values
+                return isinstance(min_value, (int, float)) and isinstance(max_value, (int, float)) and min_value <= max_value
+            except (ValueError, SyntaxError):
+                return False
+            
+        if param_type == "list":
+            try:
+                values = ast.literal_eval(value)
+                return isinstance(values, list)
+            except (ValueError, SyntaxError):
+                return False
+
+        if param_type == "wavelength":
+            return (
+                value.startswith("np.arange(")
+                or value.startswith("sol.Wl_selectif(")
+                or self.is_valid_number_list(value)
+            )
+        return True
+    
 
     def save_to_json(self):
         # sauvegardee dans le json
