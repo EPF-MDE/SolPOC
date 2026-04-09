@@ -1,5 +1,6 @@
 [
   {
+    "Comment": "Tutorial : anti-reflective coating for human eye, with research of the best theorical refractiv index",
     "Wl": [
       280,
       2505,
@@ -62,6 +63,7 @@
     "not_use": false
   },
   {
+    "Comment": "Tutorial : anti-reflective coating for Si PV-Cell",
     "Wl": [
       280,
       2505,
@@ -127,6 +129,7 @@
     "not_use": false
   },
   {
+    "Comment": "A low emissivity coating for building",
     "Wl": [
       280,
       1505,
@@ -200,6 +203,7 @@
     "not_use": false
   },
   {
+    "Comment": "Exemple of spectral-splitting coating (dichroic mirror) for PV-CST, 20 layers of SiO2/TiO2",
     "Wl": [
       280,
       2505,
@@ -260,6 +264,7 @@
     "not_use": false
   },
   {
+    "Comment": "Tutorial : selective coating for solar thermal systems, like CSP",
     "Wl": "Wl_selectif",
     "open_SolSpec": "'Materials/SolSpec.txt', 'DC'",
     "open_Spec_Signal": null,

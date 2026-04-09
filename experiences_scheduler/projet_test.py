@@ -1,5 +1,8 @@
 import pandas as pd
 import numpy as np
+import matplotlib
+
+matplotlib.use("Agg")  # Backend non-interactif (pas d'affichage)
 import matplotlib.pyplot as plt
 import time
 import os
@@ -75,15 +78,34 @@ def main_for_parameters(
     sol.Generate_materials_txt(parameters, Experience_results, directory)
 
     sol.Reflectivity_plot(parameters, Experience_results, directory)
+    print("Graphique de réflectivité sauvegardé.")
+
     sol.Transmissivity_plot(parameters, Experience_results, directory)
+    print("Graphique de transmissivité sauvegardé.")
+
     sol.OpticalStackResponse_plot(parameters, Experience_results, directory)
+    print("Graphique de réponse de la pile optique sauvegardé.")
+
     sol.Convergence_plots(parameters, Experience_results, directory)
+    print("Graphiques de convergence sauvegardés.")
+
     sol.Convergence_plots_2(parameters, Experience_results, directory)
+    print("Graphiques de convergence 2 sauvegardés.")
+
     sol.Consistency_curve_plot(parameters, Experience_results, directory)
+    print("Graphique de courbe de cohérence sauvegardé.")
+
     sol.Optimum_thickness_plot(parameters, Experience_results, directory)
+    print("Graphique d'épaisseur optimale sauvegardé.")
+
     sol.Optimum_refractive_index_plot(parameters, Experience_results, directory)
+    print("Graphique d'indice de réfraction optimale sauvegardé.")
+
     sol.Volumetric_parts_plot(parameters, Experience_results, directory)
+    print("Graphique des parties volumétriques sauvegardé.")
+
     sol.Stack_plot(parameters, Experience_results, directory)
+    print("Graphique de la pile sauvegardé.")
 
 
 def build_wl(Wl):
@@ -155,6 +177,7 @@ cpu_used = 4  # Number of CPU used. /!\ be "raisonable", regarding the real numb
 
 # ordre exact des colonnes
 columns = [
+    "Comment",
     "Wl",
     "open_SolSpec",
     "open_Spec_Signal",
@@ -204,7 +227,7 @@ columns = [
     "priority",
     "not_use",
 ]
-Comment = "Tutorial : anti-reflective coating for Si PV-Cell"
+Comment = ""
 
 
 if __name__ == "__main__":
@@ -244,18 +267,18 @@ if __name__ == "__main__":
         else:
             min_priority = df_filtered["priority"].min()
             first_min_row = df_filtered[df_filtered["priority"] == min_priority].iloc[0]
-            print(f"\nPremière ligne avec priorité minimale : \n{first_min_row}")
+            # print(f"\nPremière ligne avec priorité minimale : \n{first_min_row}")
 
         first_index = first_min_row.name  # .name renvoie l'index
 
-        print("\nDataFrame avant modification :")
-        print(df.loc[first_index, "not_use"])
+        # print("\nDataFrame avant modification :")
+        # print(df.loc[first_index, "not_use"])
         # Mettre not_use à False dans le DataFrame original
         df.at[first_index, "not_use"] = False
 
         # Vérification
-        print("\nDataFrame après modification :")
-        print(df.loc[first_index, "not_use"])
+        # print("\nDataFrame après modification :")
+        # print(df.loc[first_index, "not_use"])
 
         with open("plan_test.json", "w", encoding="utf-8") as f:
             json.dump(
@@ -264,6 +287,8 @@ if __name__ == "__main__":
                 indent=2,
                 ensure_ascii=False,
             )
+        # Initialisation of parameter Comment
+        Comment = first_min_row["Comment"]
 
         # changement des variable a modifier
         first_min_row["Wl"] = build_wl(first_min_row["Wl"])
@@ -292,9 +317,7 @@ if __name__ == "__main__":
                 sol, first_min_row["cost_function"]
             )
 
-        print(
-            f"\nPremière ligne avec priorité minimale apres transformation : \n{first_min_row}"
-        )
+        # print(f"\nPremière ligne avec priorité minimale apres transformation : \n{first_min_row}")
 
         # Open the solar spectrum
         if isinstance(first_min_row["open_SolSpec"], str):
@@ -419,7 +442,7 @@ if __name__ == "__main__":
         else:
             nb_run = 1
 
-        # Créer un dossier unique pour cette ligne
+        # Créer un dossier unique pour cette ligne a modifier pour faire en sorte que ensuite les resultat soit mis dedans!
         directory = (
             f"{launch_time_global}_row{first_index}_priority{first_min_row['priority']}"
         )
