@@ -11,6 +11,20 @@ from datetime import datetime
 from multiprocessing import Pool, cpu_count
 import json
 
+file_json = "plan_test.json"  # Fichier JSON contenant les plans d'expérience
+# file_json = "test_unitaire.json"  # Fichier JSON de test unitaire
+
+
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()  # Convertit le tableau en liste Python
+        if isinstance(obj, (np.integer,)):
+            return int(obj)  # Convertit les entiers NumPy
+        if isinstance(obj, (np.floating,)):
+            return float(obj)  # Convertit les flottants NumPy
+        return super().default(obj)
+
 
 def main_for_parameters(
     parameters,
@@ -242,8 +256,8 @@ if __name__ == "__main__":
         name_Sol_Spec = None
         name_PV = None
 
-        # lire json
-        df = pd.read_json("plan_test.json")
+        # lire json ou test unitaire
+        df = pd.read_json(file_json)
 
         # appliquer à toutes les colonnes
         for col in df.columns:
@@ -272,6 +286,9 @@ if __name__ == "__main__":
 
         first_index = first_min_row.name  # .name renvoie l'index
 
+        # Sauvegarder la ligne originale avant modifications
+        original_row = first_min_row.copy()
+
         # print("\nDataFrame avant modification :")
         # print(df.loc[first_index, "not_use"])
         # Mettre not_use à False dans le DataFrame original
@@ -281,6 +298,7 @@ if __name__ == "__main__":
         # print("\nDataFrame après modification :")
         # print(df.loc[first_index, "not_use"])
 
+        """
         with open("plan_test.json", "w", encoding="utf-8") as f:
             json.dump(
                 convert_nan(df.to_dict(orient="records")),
@@ -288,6 +306,17 @@ if __name__ == "__main__":
                 indent=2,
                 ensure_ascii=False,
             )
+        """
+
+        # test unitaire
+        with open("test_unitaire.json", "w", encoding="utf-8") as f:
+            json.dump(
+                convert_nan(df.to_dict(orient="records")),
+                f,
+                indent=2,
+                ensure_ascii=False,
+            )
+
         # Initialisation of parameter Comment
         Comment = first_min_row["Comment"]
 
@@ -466,9 +495,12 @@ if __name__ == "__main__":
             )
         except Exception as e:
             print(f"An error occurred while processing row {first_index}: {e}")
-            # Enregistrer la ligne échouée
-            failed_rows.append(first_min_row.to_dict())
+            # Enregistrer la ligne échouée (version originale)
+            failed_rows.append(original_row.to_dict())
             continue  # Passer à la ligne suivante en cas d'erreur
+
+    # Fermer toutes les figures matplotlib pour éviter la fuite mémoire
+    plt.close("all")
 
     # Sauvegarder les lignes échouées dans un fichier JSON séparé
     if failed_rows:
@@ -479,7 +511,9 @@ if __name__ == "__main__":
             existing_failed = []
         existing_failed.extend(failed_rows)
         with open("failed_experiments.json", "w", encoding="utf-8") as f:
-            json.dump(existing_failed, f, indent=2, ensure_ascii=False)
+            json.dump(
+                existing_failed, f, indent=2, ensure_ascii=False, cls=NumpyEncoder
+            )
         print(
             f"{len(failed_rows)} lignes échouées sauvegardées dans 'failed_experiments.json'."
         )
