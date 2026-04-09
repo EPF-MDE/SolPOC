@@ -233,6 +233,7 @@ Comment = ""
 if __name__ == "__main__":
     running = True
     launch_time_global = datetime.now().strftime("%Y-%m-%d_%Hh%Mm%Ss")
+    failed_rows = []  # Liste pour stocker les lignes échouées
 
     while running:
         # All Parameters who need to be initialize to None each ru
@@ -451,16 +452,36 @@ if __name__ == "__main__":
         parameters["dawn_of_time"] = time.time()
 
         # Exécuter le main pour cette ligne
-        main_for_parameters(
-            parameters,
-            nb_run,
-            launch_time_global,
-            Comment,
-            name_Sol_Spec,
-            cpu_used,
-            algo=algo,
-            cost_function=cost_function,
-            selection=selection,
+        try:
+            main_for_parameters(
+                parameters,
+                nb_run,
+                launch_time_global,
+                Comment,
+                name_Sol_Spec,
+                cpu_used,
+                algo=algo,
+                cost_function=cost_function,
+                selection=selection,
+            )
+        except Exception as e:
+            print(f"An error occurred while processing row {first_index}: {e}")
+            # Enregistrer la ligne échouée
+            failed_rows.append(first_min_row.to_dict())
+            continue  # Passer à la ligne suivante en cas d'erreur
+
+    # Sauvegarder les lignes échouées dans un fichier JSON séparé
+    if failed_rows:
+        try:
+            with open("failed_experiments.json", "r", encoding="utf-8") as f:
+                existing_failed = json.load(f)
+        except FileNotFoundError:
+            existing_failed = []
+        existing_failed.extend(failed_rows)
+        with open("failed_experiments.json", "w", encoding="utf-8") as f:
+            json.dump(existing_failed, f, indent=2, ensure_ascii=False)
+        print(
+            f"{len(failed_rows)} lignes échouées sauvegardées dans 'failed_experiments.json'."
         )
 
 
