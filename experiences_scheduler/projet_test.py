@@ -298,18 +298,8 @@ if __name__ == "__main__":
         # print("\nDataFrame après modification :")
         # print(df.loc[first_index, "not_use"])
 
-        """
-        with open("plan_test.json", "w", encoding="utf-8") as f:
-            json.dump(
-                convert_nan(df.to_dict(orient="records")),
-                f,
-                indent=2,
-                ensure_ascii=False,
-            )
-        """
-
-        # test unitaire
-        with open("test_unitaire.json", "w", encoding="utf-8") as f:
+        # enregistrement du DataFrame modifié dans le fichier JSON
+        with open(file_json, "w", encoding="utf-8") as f:
             json.dump(
                 convert_nan(df.to_dict(orient="records")),
                 f,
