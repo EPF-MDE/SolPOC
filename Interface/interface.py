@@ -3,10 +3,9 @@ from tkinter import messagebox
 import json
 import re
 import os
-from sympy import content
 import ast
 
-
+# Classe qui represente la fenetre principale
 class SolpocInterface(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -151,12 +150,12 @@ class SolpocInterface(tk.Tk):
             ],
         }
 
-        # Ajout des premiers elements
+        # Creation de l'interface
         self.create_header()  # crée le haut de l'interface
         self.create_content_area()  # crée la zone principale
         self.show_template_view()  # affiche la première vue
 
-        # Ajout de la fonctionalité de remplissage automatique des paramètres
+        # Associe chaque template à un fichier Python d’exemple.
         self.file_map = {
             "AR": "template_AR.py",
             "Bragg Mirror": "template_Bragg_mirror.py",
@@ -167,6 +166,7 @@ class SolpocInterface(tk.Tk):
             "Spectral Splitting": "template_spectral_splitting.py",
         }
 
+        # Lien entre nom affiché dans l'interface et nom reéel de la variable
         self.param_to_var = {
             "Comment": "Comment",
             "Mat_Stack": "Mat_Stack",
@@ -197,6 +197,7 @@ class SolpocInterface(tk.Tk):
             "lambda_cut_2 (nm)": "lambda_cut_2",
         }
 
+        # Sert à savoir quel type de valeur l’utilisateur doit entrer
         self.param_type = {
             "Comment" : "text",
             "Mat_Stack" : "list",
@@ -227,7 +228,7 @@ class SolpocInterface(tk.Tk):
             "Mode_choose_material" : "text",
         }
 
-
+    # Va chercher les valeurs par défaut dans le fichier template qui correspond
     def load_defaults(self, template_name):
         filename = self.file_map.get(template_name)
         if not filename:
@@ -252,6 +253,7 @@ class SolpocInterface(tk.Tk):
         return defaults
 
 
+    # Crée le haut de l'interface
     def create_header(self):
         # Barre du haut
         self.header_frame = tk.Frame(self, bg="black", height=150)  # zone du haut
@@ -273,27 +275,30 @@ class SolpocInterface(tk.Tk):
 
         # Boutons parametre
         tk.Button(
-            nav_frame, text="Paramètres", width=20, command=self.show_parameters_view
+            nav_frame, text="Parameters", width=20, command=self.show_parameters_view
         ).grid(row=0, column=1, padx=5)
 
 
+    # Crée la grande zone noire
     def create_content_area(self):
         # Zone pp
         self.content_frame = tk.Frame(self, bg="black")
         self.content_frame.pack(fill="both", expand=True, padx=20, pady=(0, 20))
 
-
+    
     def create_label(self, parent, text, font=("Arial", 12), bg="black", fg="white"):
         # Creer un label
         return tk.Label(parent, text=text, font=font, bg=bg, fg=fg)
 
 
+    # Vide la zone avant d'afficher une autre 
     def clear_content(self):
         # Supprime le contenu
         for widget in self.content_frame.winfo_children():
             widget.destroy()
 
 
+    # Affiche la page principale
     def show_template_view(self):
         # Affiche la page
         self.clear_content()
@@ -323,13 +328,13 @@ class SolpocInterface(tk.Tk):
         # Bouton de confirmation
         tk.Button(
             left_frame,
-            text="Choisir ce template",
+            text="Choose the template",
             command=self.confirm_template_selection,
         ).pack(pady=10)
 
         # Titre du résumé
         self.create_label(
-            right_frame, "Résumé des plans d'expériences", ("Arial", 14, "bold")
+            right_frame, "Summary of experiances plans", ("Arial", 14, "bold")
         ).pack(pady=10)
 
         # Zone de texe
@@ -338,32 +343,30 @@ class SolpocInterface(tk.Tk):
 
         self.refresh_summary()  # met à jour le résumé
 
-
+    # Recupere le template selectioné
     def on_template_selected(self, event):
-
-        # Recupere le template selectioné
         selection = self.template_listbox.curselection()
         if selection:
             self.selected_template = self.template_listbox.get(selection[0])
 
 
+    # Verification si le template est selectioné
     def confirm_template_selection(self):
-        # Verification si le template est selectioné
         if not self.selected_template:
-            messagebox.showwarning("Attention", "Veuillez sélectionner un template.")
+            messagebox.showwarning("Wait", "Please select a template.")
             return
 
         # Affiche le message
         messagebox.showinfo(
-            "Template sélectionné", f"Template choisi : {self.selected_template}"
+            "Selected template", f"Selected template : {self.selected_template}"
         )
 
-
+    # Affiche la page des parametres
     def show_parameters_view(self):
         if not self.selected_template:
             messagebox.showwarning(
-                "Attention",
-                "Veuillez d'abord sélectionner un template dans l'onglet Template.",
+                "Wait",
+                "First, select a template from the Template tab.",
             )
             return
 
@@ -376,7 +379,7 @@ class SolpocInterface(tk.Tk):
 
         # Titre
         self.create_label(
-            container, f"Paramètres - {self.selected_template}", ("Arial", 16, "bold")
+            container, f"Parameters - {self.selected_template}", ("Arial", 16, "bold")
         ).pack(pady=20)
 
         # Frame pour la zone scrollable
@@ -423,10 +426,10 @@ class SolpocInterface(tk.Tk):
         bottom_frame.pack(fill="x", pady=20)
 
         tk.Button(
-            bottom_frame, text="Valider", width=20, command=self.validate_parameters
+            bottom_frame, text="Confirm", width=20, command=self.validate_parameters
         ).pack(anchor="center")
 
-
+    # Cette fonction est appelée quand l'utilisateur appuie sur Confirm dasn l'interface
     def validate_parameters(self):
         # recupere les valeurs entrées
         parameter_values = {}
@@ -437,15 +440,15 @@ class SolpocInterface(tk.Tk):
             # vérifie si le champ est rempli
             if not value:
                 messagebox.showwarning(
-                    "Attention", f"Veuillez remplir le champ : {param_name}"
+                    "Wait", f"Please fill in the field : {param_name}"
                 )
                 return
             
             # Verification du type
-            if not self.validate_type(self, param_name, value):
+            if not self.validate_type(param_name, value):
                 messagebox.showwarning(
-                    "Type incorrect", 
-                    f"Le champ '{param_name}' n'a pas le bon type"
+                    "Incorrect type", 
+                    f"The '{param_name}' field is of the wrong type"
                 )
                 return 
             
@@ -461,7 +464,7 @@ class SolpocInterface(tk.Tk):
         self.experiments.append(experiment)
         self.save_to_json()
 
-        messagebox.showinfo("Succès", "Le plan d'expériences a été enregistré.")
+        messagebox.showinfo("Success", "The design of experiments has been saved.")
 
         self.show_template_view()  # retour à la page principale
 
@@ -517,7 +520,7 @@ class SolpocInterface(tk.Tk):
             return (
                 value.startswith("np.arange(")
                 or value.startswith("sol.Wl_selectif(")
-                or self.is_valid_number_list(value)
+                or self.value_list(value)
             )
         return True
     
@@ -547,7 +550,7 @@ class SolpocInterface(tk.Tk):
 
         if not self.experiments:
             self.summary_text.insert(
-                tk.END, "Aucun plan d'expériences enregistré pour le moment."
+                tk.END, "No experimental designs have been saved yet."
             )
             return
 
