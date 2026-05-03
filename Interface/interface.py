@@ -11,7 +11,7 @@ class SolpocInterface(tk.Tk):
     def __init__(self):
         super().__init__()
 
-        # === FENETRE PRINCIPALE ===
+        # Fenetre principale
         self.title("SOLPOC UI")  # titre de la fenêtre
         self.geometry("1100x600")  # taille de la fenêtre
         self.configure(bg="grey")  # couleur de fond
@@ -151,7 +151,7 @@ class SolpocInterface(tk.Tk):
             ],
         }
 
-        # Interface
+        # Ajout des premiers elements
         self.create_header()  # crée le haut de l'interface
         self.create_content_area()  # crée la zone principale
         self.show_template_view()  # affiche la première vue
@@ -227,6 +227,7 @@ class SolpocInterface(tk.Tk):
             "Mode_choose_material" : "text",
         }
 
+
     def load_defaults(self, template_name):
         filename = self.file_map.get(template_name)
         if not filename:
@@ -249,6 +250,7 @@ class SolpocInterface(tk.Tk):
                 defaults[param] = match.group(1).strip()
 
         return defaults
+
 
     def create_header(self):
         # Barre du haut
@@ -274,19 +276,23 @@ class SolpocInterface(tk.Tk):
             nav_frame, text="Paramètres", width=20, command=self.show_parameters_view
         ).grid(row=0, column=1, padx=5)
 
+
     def create_content_area(self):
         # Zone pp
         self.content_frame = tk.Frame(self, bg="black")
         self.content_frame.pack(fill="both", expand=True, padx=20, pady=(0, 20))
 
+
     def create_label(self, parent, text, font=("Arial", 12), bg="black", fg="white"):
         # Creer un label
         return tk.Label(parent, text=text, font=font, bg=bg, fg=fg)
+
 
     def clear_content(self):
         # Supprime le contenu
         for widget in self.content_frame.winfo_children():
             widget.destroy()
+
 
     def show_template_view(self):
         # Affiche la page
@@ -332,12 +338,14 @@ class SolpocInterface(tk.Tk):
 
         self.refresh_summary()  # met à jour le résumé
 
+
     def on_template_selected(self, event):
 
         # Recupere le template selectioné
         selection = self.template_listbox.curselection()
         if selection:
             self.selected_template = self.template_listbox.get(selection[0])
+
 
     def confirm_template_selection(self):
         # Verification si le template est selectioné
@@ -349,6 +357,7 @@ class SolpocInterface(tk.Tk):
         messagebox.showinfo(
             "Template sélectionné", f"Template choisi : {self.selected_template}"
         )
+
 
     def show_parameters_view(self):
         if not self.selected_template:
@@ -417,6 +426,7 @@ class SolpocInterface(tk.Tk):
             bottom_frame, text="Valider", width=20, command=self.validate_parameters
         ).pack(anchor="center")
 
+
     def validate_parameters(self):
         # recupere les valeurs entrées
         parameter_values = {}
@@ -454,6 +464,7 @@ class SolpocInterface(tk.Tk):
         messagebox.showinfo("Succès", "Le plan d'expériences a été enregistré.")
 
         self.show_template_view()  # retour à la page principale
+
 
     # Fonction qui verifie le type
     def validate_type(self, param_name, value):
@@ -510,6 +521,7 @@ class SolpocInterface(tk.Tk):
             )
         return True
     
+
     def value_list(self, value):
         try:
             values = ast.literal_eval(value)
@@ -522,10 +534,12 @@ class SolpocInterface(tk.Tk):
         except (ValueError, SyntaxError):
             return False
 
+
     def save_to_json(self):
         # sauvegardee dans le json
         with open(self.json_file, "w", encoding="utf-8") as f:
             json.dump(self.experiments, f, indent=4, ensure_ascii=False)
+
 
     def refresh_summary(self):
         # mise a jour du texte du résumé
