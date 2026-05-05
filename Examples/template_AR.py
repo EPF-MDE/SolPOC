@@ -44,9 +44,7 @@ nb_layer = 3
 Ang = 0  # Incidence angle on the thin layers stack, in °
 # %% Hyperparameters for optimisation methods
 pop_size = 30  # number of individual per iteration / generation
-crossover_rate = (
-    0.5  # crossover rate (1.0 = 100%) This is Cr for DEvol optimization method
-)
+crossover_rate = 0.5  # crossover rate (1.0 = 100%) This is Cr for DEvol optimization method
 f1 = 1.0  # Hyperparameter for mutation in DE
 mutation_DE = "rand_1"  # String. Mutaton method for DE optimization method
 # %% Hyperparameters for optimisation methods
