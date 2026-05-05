@@ -250,7 +250,7 @@ class SolpocInterface(tk.Tk):
 
         # Parcours chaque ligne trouvé
         for vars, values in lines:
-            # Sépare les variables 
+            # Sépare les variables
             vars_list = [v.strip() for v in vars.split(",")]
 
             # Sépare les valeurs
@@ -260,10 +260,8 @@ class SolpocInterface(tk.Tk):
             if len(vars_list) == len(values_list):
                 # Associe chaque variable à sa valeur
                 for var_name, value in zip(vars_list, values_list):
-
                     # Parcourt les paramètres attendus par l’interface
                     for param, var in self.param_to_var.items():
-
                         # Si la variable correspond on stocke la valeur
                         if var == var_name:
                             defaults[param] = value
@@ -284,9 +282,9 @@ class SolpocInterface(tk.Tk):
 
         return defaults
 
-# Convertit une valeur brute du fichier template en format simplifié pour l'affichage.
+    # Convertit une valeur brute du fichier template en format simplifié pour l'affichage.
     def simplify_default(self, param_name, raw_value):
-        
+
         param_type = self.param_type.get(param_name, "text")
 
         # Cas d'une liste Python
@@ -317,9 +315,16 @@ class SolpocInterface(tk.Tk):
         if param_type == "text":
             return raw_value.strip('"').strip("'")
 
+        # Cas d'une longueur d'onde : on enlève np.arange( ) et les parenthèses
+        if param_type == "wavelength":
+            value = raw_value.strip()
+            if value.startswith("np.arange(") and value.endswith(")"):
+                return value[len("np.arange(") : -1]
+            if value.startswith("sol.Wl_selectif(") and value.endswith(")"):
+                return value[len("sol.Wl_selectif(") : -1]
+
         # Pour les autres types, on retourne la valeur telle quelle
         return raw_value
-    
 
     def create_header(self):
         # crée la barre du haut
@@ -327,7 +332,9 @@ class SolpocInterface(tk.Tk):
         self.header_frame.pack(fill="x", padx=20, pady=20)
 
         # affiche le titre
-        self.create_label(self.header_frame, "SOLPOC UI", ("Arial", 20, "bold")).pack(pady=(15, 10))
+        self.create_label(self.header_frame, "SOLPOC UI", ("Arial", 20, "bold")).pack(
+            pady=(15, 10)
+        )
 
         # frame pour les boutons
         nav_frame = tk.Frame(self.header_frame, bg="black")
@@ -343,21 +350,16 @@ class SolpocInterface(tk.Tk):
             nav_frame, text="Parameters", width=20, command=self.show_parameters_view
         ).grid(row=0, column=1, padx=5)
 
-
-
     def create_content_area(self):
         self.content_frame = tk.Frame(self, bg="black")
         self.content_frame.pack(fill="both", expand=True, padx=20, pady=(0, 20))
 
-
     def create_label(self, parent, text, font=("Arial", 12), bg="black", fg="white"):
         return tk.Label(parent, text=text, font=font, bg=bg, fg=fg)
-
 
     def clear_content(self):
         for widget in self.content_frame.winfo_children():
             widget.destroy()
-
 
     def show_template_view(self):
         # vide la zone principale
@@ -404,12 +406,10 @@ class SolpocInterface(tk.Tk):
         # met à jour le résumé
         self.refresh_summary()
 
-
     def on_template_selected(self, event):
         selection = self.template_listbox.curselection()
         if selection:
             self.selected_template = self.template_listbox.get(selection[0])
-
 
     def confirm_template_selection(self):
         if not self.selected_template:
@@ -418,7 +418,6 @@ class SolpocInterface(tk.Tk):
         messagebox.showinfo(
             "Selected template", f"Selected template : {self.selected_template}"
         )
-
 
     def show_parameters_view(self):
         # vérifie qu'un template est sélectionné
@@ -507,7 +506,6 @@ class SolpocInterface(tk.Tk):
             bottom_frame, text="Confirm", width=20, command=self.validate_parameters
         ).pack(anchor="center")
 
-
     def validate_parameters(self):
         # dictionnaire qui stocke les valeurs saisies
         parameter_values = {}
@@ -563,7 +561,6 @@ class SolpocInterface(tk.Tk):
 
         # retourne à la page des templates
         self.show_template_view()
-
 
     def validate_type(self, param_name, value):
         # récupère le type attendu du paramètre
@@ -656,7 +653,6 @@ class SolpocInterface(tk.Tk):
         # accepte par défaut si aucun cas spécifique
         return True
 
-
     def value_list(self, value):
         try:
             values = ast.literal_eval(value)
@@ -668,7 +664,6 @@ class SolpocInterface(tk.Tk):
             return True
         except (ValueError, SyntaxError):
             return False
-
 
     def normalize_range(self, value):
         # enlève les espaces inutiles
@@ -687,7 +682,6 @@ class SolpocInterface(tk.Tk):
 
         # sinon la valeur est invalide
         return None
-
 
     def normalize_list(self, value):
         # enlève les espaces inutiles
@@ -708,11 +702,9 @@ class SolpocInterface(tk.Tk):
         # sinon la valeur est invalide
         return None
 
-
     def save_to_json(self):
         with open(self.json_file, "w", encoding="utf-8") as f:
             json.dump(self.experiments, f, indent=4, ensure_ascii=False)
-
 
     def refresh_summary(self):
         # vide la zone de texte
