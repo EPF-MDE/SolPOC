@@ -37,8 +37,8 @@ def main_for_parameters(
     cost_function,
     selection,
 ):
+    directory = parameters["directory"]
     sol.run_main(parameters)
-    directory = parameters.get("directory")
 
     mp_pool = Pool(cpu_used)
     tasks = [(i, parameters, algo, cost_function, selection) for i in range(nb_run)]
@@ -463,10 +463,17 @@ if __name__ == "__main__":
             nb_run = 1
 
         # Créer un dossier unique pour cette ligne a modifier pour faire en sorte que ensuite les resultat soit mis dedans!
-        directory = (
-            f"{launch_time_global}_row{first_index}_priority{first_min_row['priority']}"
+        # dossier global pour tous les resultats
+        global_run_dir = os.path.join("runs", launch_time_global)
+        os.makedirs(global_run_dir, exist_ok=True)
+
+        # Dossier spécifique à cette expérience
+
+        directory = os.path.join(
+            global_run_dir, f"row{first_index}_priority{first_min_row['priority']}"
         )
         os.makedirs(directory, exist_ok=True)
+
         parameters["directory"] = directory
         parameters["dawn_of_time"] = time.time()
 
