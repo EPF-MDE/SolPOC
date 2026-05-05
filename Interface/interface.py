@@ -230,24 +230,64 @@ class SolpocInterface(tk.Tk):
 
     # Va chercher les valeurs par défaut dans le fichier template qui correspond
     def load_defaults(self, template_name):
+        # Recupere le nom du fichier associé au template
         filename = self.file_map.get(template_name)
         if not filename:
             return {}
 
+        # Chemin vers le fichier template
         filepath = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "..", "Examples", filename
         )
 
+        # Verifie que le fichier existe
         if not os.path.exists(filepath):
             return {}
 
+        # Ouvre le fichier et lit le contenu
         with open(filepath, "r", encoding="utf-8") as f:
             content = f.read()
 
+        # Dictionnaire qui va contenir les valeurs par default
         defaults = {}
+
+        # Gestion des affectations multiples (ex: f1, f2 = 0.9, 0.8)
+
+        # Toutes les lignes avec plusieurs variables à gauche
+        lines = re.findall(r"([\w\s,]+)=\s*([^\n#]+)", content)
+
+        # Parcours chaque ligne trouvé
+        for vars, values in lines:
+            # Sépare les variables 
+            vars_list = [v.strip() for v in vars.split(",")]
+
+            # Sépare les valeurs
+            values_list = [v.strip() for v in values.split(",")]
+
+            # Verifie s'il y a autant de variables que de valeurs
+            if len(vars_list) == len(values_list):
+                # Associe chaque variable à sa valeur
+                for var_name, value in zip(vars_list, values_list):
+
+                    # Parcourt les paramètres attendus par l’interface
+                    for param, var in self.param_to_var.items():
+
+                        # Si la variable correspond on stocke la valeur
+                        if var == var_name:
+                            defaults[param] = value
+
+        # Gestion classique
+
+        # Parcourt tous les paramètres attendus
         for param, var in self.param_to_var.items():
+            if param in defaults:
+                continue
+
+            # Cherche une affectation simple
             match = re.search(rf"{var}\s*=\s*([^#\n]+)", content)
+
             if match:
+                # Ajoute la valeur trouvée au dictionnaire
                 defaults[param] = match.group(1).strip()
 
         return defaults
