@@ -5,23 +5,20 @@ import re
 import os
 import ast
 
-# Classe qui represente la fenetre principale
+
 class SolpocInterface(tk.Tk):
     def __init__(self):
         super().__init__()
 
-        # Fenetre principale
-        self.title("SOLPOC UI")  # titre de la fenêtre
-        self.geometry("1100x600")  # taille de la fenêtre
-        self.configure(bg="grey")  # couleur de fond
+        self.title("SOLPOC UI")
+        self.geometry("1100x600")
+        self.configure(bg="grey")
 
-        # Variables
-        self.selected_template = None  # template choisi (initialiser a 0)
-        self.experiments = []  # liste des expériences enregistrées
-        self.parameter_entries = {}  # stocke les champs de saisie
-        self.json_file = "plans_experiences.json"  # fichier de sauvegarde
+        self.selected_template = None
+        self.experiments = []
+        self.parameter_entries = {}
+        self.json_file = "plans_experiences.json"
 
-        # Config des templates
         self.templates_config = {
             "AR": [
                 "Comment",
@@ -150,12 +147,6 @@ class SolpocInterface(tk.Tk):
             ],
         }
 
-        # Creation de l'interface
-        self.create_header()  # crée le haut de l'interface
-        self.create_content_area()  # crée la zone principale
-        self.show_template_view()  # affiche la première vue
-
-        # Associe chaque template à un fichier Python d’exemple.
         self.file_map = {
             "AR": "template_AR.py",
             "Bragg Mirror": "template_Bragg_mirror.py",
@@ -166,7 +157,6 @@ class SolpocInterface(tk.Tk):
             "Spectral Splitting": "template_spectral_splitting.py",
         }
 
-        # Lien entre nom affiché dans l'interface et nom reéel de la variable
         self.param_to_var = {
             "Comment": "Comment",
             "Mat_Stack": "Mat_Stack",
@@ -197,38 +187,40 @@ class SolpocInterface(tk.Tk):
             "lambda_cut_2 (nm)": "lambda_cut_2",
         }
 
-        # Sert à savoir quel type de valeur l’utilisateur doit entrer
         self.param_type = {
-            "Comment" : "text",
-            "Mat_Stack" : "list",
-            "Mat_Option" : "list",
-            "Wl (start, stop, step)" : "wavelength",
-            "Th_Substrate (nm)" : "number",
-            "Th_range (min, max)" : "range",
-            "n_range (min, max)" : "range",
-            "vf_range (min, max)" : "range",
-            "nb_layer" : "int",
-            "Ang (°)" : "number",
-            "d_Stack_Opt" : "list",
-            "Lambda_cut_1 (nm)" : "number",
-            "lambda_cut_1 (nm)" : "number",
-            "lambda_cut_2 (nm)" : "number",
-            "C" : "number",
-            "T_air (K)" : "number",
-            "T_abs (K)" : "number",
-            "pop_size" : "int",
-            "budget" : "int",
-            "nb_run" : "int",
-            "cpu_used" : "int",
-            "seed" : "optional_int",
-            "crossover_rate" : "rate",
-            "f1" : "number",
-            "f2" : "number",
-            "mutation_DE" : "text",
-            "Mode_choose_material" : "text",
+            "Comment": "text",
+            "Mat_Stack": "list",
+            "Mat_Option": "list",
+            "Wl (start, stop, step)": "wavelength",
+            "Th_Substrate (nm)": "number",
+            "Th_range (min, max)": "range",
+            "n_range (min, max)": "range",
+            "vf_range (min, max)": "range",
+            "nb_layer": "int",
+            "Ang (°)": "number",
+            "d_Stack_Opt": "list",
+            "Lambda_cut_1 (nm)": "number",
+            "lambda_cut_1 (nm)": "number",
+            "lambda_cut_2 (nm)": "number",
+            "C": "number",
+            "T_air (K)": "number",
+            "T_abs (K)": "number",
+            "pop_size": "int",
+            "budget": "int",
+            "nb_run": "int",
+            "cpu_used": "int",
+            "seed": "optional_int",
+            "crossover_rate": "rate",
+            "f1": "number",
+            "f2": "number",
+            "mutation_DE": "text",
+            "Mode_choose_material": "text",
         }
 
-    # Va chercher les valeurs par défaut dans le fichier template qui correspond
+        self.create_header()
+        self.create_content_area()
+        self.show_template_view()
+
     def load_defaults(self, template_name):
         filename = self.file_map.get(template_name)
         if not filename:
@@ -248,120 +240,113 @@ class SolpocInterface(tk.Tk):
         for param, var in self.param_to_var.items():
             match = re.search(rf"{var}\s*=\s*([^#\n]+)", content)
             if match:
-                defaults[param] = match.group(1).strip()
+                raw = match.group(1).strip()
+                defaults[param] = self.simplify_default(param, raw)
 
         return defaults
 
+    def simplify_default(self, param_name, raw_value):
+        """Convertit une valeur brute du fichier template en format simplifié pour l'affichage."""
+        param_type = self.param_type.get(param_name, "text")
 
-    # Crée le haut de l'interface
+        if param_type == "list":
+            try:
+                values = ast.literal_eval(raw_value)
+                if isinstance(values, list):
+                    return ", ".join(str(v).strip('"').strip("'") for v in values)
+            except (ValueError, SyntaxError):
+                pass
+
+        if param_type == "range":
+            try:
+                values = ast.literal_eval(raw_value)
+                if isinstance(values, tuple) and len(values) == 2:
+                    return f"{values[0]}, {values[1]}"
+            except (ValueError, SyntaxError):
+                pass
+
+        if param_type == "text":
+            return raw_value.strip('"').strip("'")
+
+        return raw_value
+
     def create_header(self):
-        # Barre du haut
-        self.header_frame = tk.Frame(self, bg="black", height=150)  # zone du haut
+        self.header_frame = tk.Frame(self, bg="black", height=150)
         self.header_frame.pack(fill="x", padx=20, pady=20)
 
-        # Titre headers
         self.create_label(self.header_frame, "SOLPOC UI", ("Arial", 20, "bold")).pack(
             pady=(15, 10)
         )
 
-        # Zones boutons
-        nav_frame = tk.Frame(self.header_frame, bg="black")  # sous-zone pour boutons
+        nav_frame = tk.Frame(self.header_frame, bg="black")
         nav_frame.pack()
 
-        # Boutons template
         tk.Button(
             nav_frame, text="Template", width=20, command=self.show_template_view
         ).grid(row=0, column=0, padx=5)
 
-        # Boutons parametre
         tk.Button(
             nav_frame, text="Parameters", width=20, command=self.show_parameters_view
         ).grid(row=0, column=1, padx=5)
 
-
-    # Crée la grande zone noire
     def create_content_area(self):
-        # Zone pp
         self.content_frame = tk.Frame(self, bg="black")
         self.content_frame.pack(fill="both", expand=True, padx=20, pady=(0, 20))
 
-    
     def create_label(self, parent, text, font=("Arial", 12), bg="black", fg="white"):
-        # Creer un label
         return tk.Label(parent, text=text, font=font, bg=bg, fg=fg)
 
-
-    # Vide la zone avant d'afficher une autre 
     def clear_content(self):
-        # Supprime le contenu
         for widget in self.content_frame.winfo_children():
             widget.destroy()
 
-
-    # Affiche la page principale
     def show_template_view(self):
-        # Affiche la page
         self.clear_content()
 
-        # Partie à gauche (templates)
         left_frame = tk.Frame(self.content_frame, bg="black", width=300)
         left_frame.pack(side="left", fill="y", padx=(0, 10))
 
-        # Partie à droite (résumé)
         right_frame = tk.Frame(self.content_frame, bg="black")
         right_frame.pack(side="right", fill="both", expand=True)
 
-        # Titre
         self.create_label(left_frame, "Templates", ("Arial", 14, "bold")).pack(pady=10)
 
-        # Liste template
         self.template_listbox = tk.Listbox(left_frame, font=("Arial", 12), height=15)
         self.template_listbox.pack(padx=20, pady=10, fill="both", expand=True)
 
-        # Ajout des templates
         for template_name in self.templates_config:
             self.template_listbox.insert(tk.END, template_name)
 
-        # Clique
         self.template_listbox.bind("<<ListboxSelect>>", self.on_template_selected)
 
-        # Bouton de confirmation
         tk.Button(
             left_frame,
             text="Choose the template",
             command=self.confirm_template_selection,
         ).pack(pady=10)
 
-        # Titre du résumé
         self.create_label(
             right_frame, "Summary of experiances plans", ("Arial", 14, "bold")
         ).pack(pady=10)
 
-        # Zone de texe
         self.summary_text = tk.Text(right_frame, font=("Arial", 11), wrap="word")
         self.summary_text.pack(fill="both", expand=True, padx=20, pady=10)
 
-        self.refresh_summary()  # met à jour le résumé
+        self.refresh_summary()
 
-    # Recupere le template selectioné
     def on_template_selected(self, event):
         selection = self.template_listbox.curselection()
         if selection:
             self.selected_template = self.template_listbox.get(selection[0])
 
-
-    # Verification si le template est selectioné
     def confirm_template_selection(self):
         if not self.selected_template:
             messagebox.showwarning("Wait", "Please select a template.")
             return
-
-        # Affiche le message
         messagebox.showinfo(
             "Selected template", f"Selected template : {self.selected_template}"
         )
 
-    # Affiche la page des parametres
     def show_parameters_view(self):
         if not self.selected_template:
             messagebox.showwarning(
@@ -373,20 +358,16 @@ class SolpocInterface(tk.Tk):
         self.clear_content()
         defaults = self.load_defaults(self.selected_template)
 
-        # Conteneur principal
         container = tk.Frame(self.content_frame, bg="black")
         container.pack(fill="both", expand=True)
 
-        # Titre
         self.create_label(
             container, f"Parameters - {self.selected_template}", ("Arial", 16, "bold")
         ).pack(pady=20)
 
-        # Frame pour la zone scrollable
         scroll_container = tk.Frame(container, bg="black")
         scroll_container.pack(fill="both", expand=True)
 
-        # Zone scrollable
         canvas = tk.Canvas(scroll_container, bg="black", highlightthickness=0)
         scrollbar = tk.Scrollbar(
             scroll_container, orient="vertical", command=canvas.yview
@@ -403,7 +384,6 @@ class SolpocInterface(tk.Tk):
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
-        # Grille avec 3 paramètres par ligne
         self.parameter_entries = {}
         parameters = self.templates_config[self.selected_template]
         cols_per_row = 3
@@ -421,7 +401,6 @@ class SolpocInterface(tk.Tk):
                 entry.insert(0, defaults[param_name])
             self.parameter_entries[param_name] = entry
 
-        # Frame séparé pour le bouton en bas centré
         bottom_frame = tk.Frame(container, bg="black")
         bottom_frame.pack(fill="x", pady=20)
 
@@ -429,57 +408,52 @@ class SolpocInterface(tk.Tk):
             bottom_frame, text="Confirm", width=20, command=self.validate_parameters
         ).pack(anchor="center")
 
-    # Cette fonction est appelée quand l'utilisateur appuie sur Confirm dasn l'interface
     def validate_parameters(self):
-        # recupere les valeurs entrées
         parameter_values = {}
 
         for param_name, entry in self.parameter_entries.items():
             value = entry.get().strip()
 
-            # vérifie si le champ est rempli
             if not value:
                 messagebox.showwarning(
                     "Wait", f"Please fill in the field : {param_name}"
                 )
                 return
-            
-            # Verification du type
+
             if not self.validate_type(param_name, value):
                 messagebox.showwarning(
-                    "Incorrect type", 
-                    f"The '{param_name}' field is of the wrong type"
+                    "Incorrect type",
+                    f"The '{param_name}' field is of the wrong type",
                 )
-                return 
-            
+                return
+
+            param_type = self.param_type.get(param_name, "text")
+            if param_type == "range":
+                value = self.normalize_range(value)
+            elif param_type == "list":
+                value = self.normalize_list(value)
+
             parameter_values[param_name] = value
 
-        # création du plan d'expériences
         experiment = {
             "template": self.selected_template,
             "parameters": parameter_values,
         }
-
-        # ajout à la liste
         self.experiments.append(experiment)
         self.save_to_json()
-
         messagebox.showinfo("Success", "The design of experiments has been saved.")
+        self.show_template_view()
 
-        self.show_template_view()  # retour à la page principale
-
-
-    # Fonction qui verifie le type
     def validate_type(self, param_name, value):
         param_type = self.param_type.get(param_name, "text")
         value = value.strip()
 
         if param_type == "text":
             return value != ""
-        
+
         if param_type == "int":
             return value.isdigit() and int(value) > 0
-        
+
         if param_type == "optional_int":
             return value == "None" or (value.isdigit() and int(value) > 0)
 
@@ -489,29 +463,37 @@ class SolpocInterface(tk.Tk):
                 return True
             except ValueError:
                 return False
-        
+
         if param_type == "rate":
             try:
                 number = float(value)
                 return 0 <= number <= 1
             except ValueError:
                 return False
-        
+
         if param_type == "range":
+            normalized = self.normalize_range(value)
+            if normalized is None:
+                return False
             try:
-                values = ast.literal_eval(value)
-                if not isinstance(values, tuple):
+                values = ast.literal_eval(normalized)
+                if not isinstance(values, tuple) or len(values) != 2:
                     return False
-                if len(values) != 2:
-                    return False
-                min_value, max_value = values
-                return isinstance(min_value, (int, float)) and isinstance(max_value, (int, float)) and min_value <= max_value
+                min_v, max_v = values
+                return (
+                    isinstance(min_v, (int, float))
+                    and isinstance(max_v, (int, float))
+                    and min_v <= max_v
+                )
             except (ValueError, SyntaxError):
                 return False
-            
+
         if param_type == "list":
+            normalized = self.normalize_list(value)
+            if normalized is None:
+                return False
             try:
-                values = ast.literal_eval(value)
+                values = ast.literal_eval(normalized)
                 return isinstance(values, list)
             except (ValueError, SyntaxError):
                 return False
@@ -523,7 +505,6 @@ class SolpocInterface(tk.Tk):
                 or self.value_list(value)
             )
         return True
-    
 
     def value_list(self, value):
         try:
@@ -537,15 +518,32 @@ class SolpocInterface(tk.Tk):
         except (ValueError, SyntaxError):
             return False
 
+    def normalize_range(self, value):
+        """Convertit '0, 200' ou '0 200' en '(0, 200)' si nécessaire."""
+        value = value.strip()
+        if value.startswith("(") and value.endswith(")"):
+            return value
+        parts = [p.strip() for p in value.replace(" ", ",").split(",") if p.strip()]
+        if len(parts) == 2:
+            return f"({parts[0]}, {parts[1]})"
+        return None
+
+    def normalize_list(self, value):
+        """Convertit 'BK7, SiO2, TiO2' en '["BK7", "SiO2", "TiO2"]' si nécessaire."""
+        value = value.strip()
+        if value.startswith("["):
+            return value
+        parts = [p.strip().strip('"').strip("'") for p in value.split(",") if p.strip()]
+        if parts:
+            items = ", ".join(f'"{p}"' for p in parts)
+            return f"[{items}]"
+        return None
 
     def save_to_json(self):
-        # sauvegardee dans le json
         with open(self.json_file, "w", encoding="utf-8") as f:
             json.dump(self.experiments, f, indent=4, ensure_ascii=False)
 
-
     def refresh_summary(self):
-        # mise a jour du texte du résumé
         self.summary_text.delete("1.0", tk.END)
 
         if not self.experiments:
@@ -554,7 +552,6 @@ class SolpocInterface(tk.Tk):
             )
             return
 
-        # affiche tous les plans enregistrés
         for i, exp in enumerate(self.experiments, start=1):
             lignes = [f"Plan {i}", f"Template : {exp['template']}"]
             lignes += [
@@ -564,7 +561,6 @@ class SolpocInterface(tk.Tk):
             self.summary_text.insert(tk.END, "\n".join(lignes) + "\n")
 
 
-# lancer l'app
 if __name__ == "__main__":
     app = SolpocInterface()
     app.mainloop()
