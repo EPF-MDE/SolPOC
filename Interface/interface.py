@@ -1,3 +1,4 @@
+from curses import raw
 import tkinter as tk
 from tkinter import messagebox, ttk
 import json
@@ -15,9 +16,9 @@ class SolpocInterface(tk.Tk):
         self.geometry("1100x600")
         self.configure(bg="grey")
 
-        # template confirmé par le bouton 
+        # template confirmé par le bouton
         self.selected_template = None
-        
+
         # template cliqué dans la liste mais pas encore confirmé
         self.selected_template_f = None
 
@@ -356,20 +357,16 @@ class SolpocInterface(tk.Tk):
             nav_frame, text="Parameters", width=20, command=self.show_parameters_view
         ).grid(row=0, column=1, padx=5)
 
-
     def create_content_area(self):
         self.content_frame = tk.Frame(self, bg="black")
         self.content_frame.pack(fill="both", expand=True, padx=20, pady=(0, 20))
 
-
     def create_label(self, parent, text, font=("Arial", 12), bg="black", fg="white"):
         return tk.Label(parent, text=text, font=font, bg=bg, fg=fg)
-
 
     def clear_content(self):
         for widget in self.content_frame.winfo_children():
             widget.destroy()
-
 
     def show_template_view(self):
         # vide la zone principale
@@ -416,12 +413,10 @@ class SolpocInterface(tk.Tk):
         # met à jour le résumé
         self.refresh_summary()
 
-
     def on_template_selected(self, event):
         selection = self.template_listbox.curselection()
         if selection:
             self.selected_template_f = self.template_listbox.get(selection[0])
-
 
     def confirm_template_selection(self):
         # Verifie qu'un template a ete selectioné
@@ -503,14 +498,18 @@ class SolpocInterface(tk.Tk):
         meta_fields = ["Priority", "First name", "Last name"]
 
         for i, field in enumerate(meta_fields):
-            self.create_label(meta_frame, field).grid(row=0, column=i * 2, padx=10, pady=5)
+            self.create_label(meta_frame, field).grid(
+                row=0, column=i * 2, padx=10, pady=5
+            )
 
             if field == "Priority":
-                entry = ttk.Combobox(meta_frame, value=[1, 2, 3], width=18, state="readonly")
+                entry = ttk.Combobox(
+                    meta_frame, value=[1, 2, 3], width=18, state="readonly"
+                )
                 entry.current(0)  # valeur par défaut = 1
-            else : 
+            else:
                 entry = tk.Entry(meta_frame, width=20)
-                
+
             entry.grid(row=0, column=i * 2 + 1, padx=10, pady=5)
 
             self.meta_entries[field] = entry
@@ -538,7 +537,7 @@ class SolpocInterface(tk.Tk):
 
             # Rentre la date automatiquement
             # if field == "Date":
-                # entry.insert(0, datetime.now().strftime("%d/%m/%Y"))
+            # entry.insert(0, datetime.now().strftime("%d/%m/%Y"))
 
         # frame pour le bouton en bas
         bottom_frame = tk.Frame(container, bg="black")
@@ -550,82 +549,37 @@ class SolpocInterface(tk.Tk):
         ).pack(anchor="center")
 
     def validate_parameters(self):
-        # dictionnaire qui stocke les valeurs saisies
-        parameter_values = {}
 
-        # récupère les informations générales
-        meta_values = {}
-
-        for field, entry in self.meta_entries.items():
-            value = entry.get().strip()
-
-            if not value:
-                messagebox.showwarning("Wait", f"Please fill in the field : {field}")
-                return
-
-            meta_values[field] = value
-
-            # Verifie que la priorité est bien 1, 2, 3
-            if meta_values["Priority"] not in ["1", "2", "3"]:
-                messagebox.showwarning("Incorrect type", "Priority must be 1, 2 or 3.")
-                return
-
-        # parcourt tous les champs de paramètres
+        # vérification que tous les champs template sont remplis
         for param_name, entry in self.parameter_entries.items():
-            # récupère la valeur saisie
-            value = entry.get().strip()
-
-            # vérifie que le champ n'est pas vide
-            if not value:
-                messagebox.showwarning(
-                    "Wait", f"Please fill in the field : {param_name}"
-                )
+            if param_name.startswith("__"):
+                continue
+            if not entry.get().strip():
+                messagebox.showwarning("Attention", f"Veuillez remplir : {param_name}")
                 return
 
-            # vérifie que la valeur a le bon type
-            if not self.validate_type(param_name, value):
-                messagebox.showwarning(
-                    "Incorrect type",
-                    f"The '{param_name}' field is of the wrong type",
-                )
-                return
+        # récupère la priorité
+        try:
+            priority = int(self.meta_entries["Priority"].get())
+        except (ValueError, KeyError):
+            messagebox.showwarning("Attention", "La priorité doit être un entier.")
+            return
 
-            # récupère le type attendu du paramètre
-            param_type = self.param_type.get(param_name, "text")
+        # récupère prénom et nom
+        firstname = self.meta_entries.get("First name")
+        firstname = firstname.get().strip() if firstname else "inconnu"
 
-            # normalise les intervalles
-            if param_type == "range":
-                value = self.normalize_range(value)
+        lastname = self.meta_entries.get("Last name")
+        lastname = lastname.get().strip() if lastname else "inconnu"
 
-            # normalise les listes
-            elif param_type == "list":
-                value = self.normalize_list(value)
+        # génère et sauvegarde le JSON
+        filepath = self.build_and_save_json(
+            self.parameter_entries, priority, firstname, lastname
+        )
 
-            # ajoute la valeur au dictionnaire
-            parameter_values[param_name] = value
+        messagebox.showinfo("Succès", f"Plan enregistré :\n{filepath}")
 
-        # crée le plan d'expérience
-        experiment = {
-            "template": self.selected_template,
-            "priority": int(meta_values["Priority"]),
-            "identity": {
-                "firstname":meta_values["First name"],
-                "lastname":meta_values["Last name"],
-            },
-            "date":meta_values["Date"],
-            "parameters": parameter_values,
-        }
-
-        # ajoute le plan à la liste
-        self.experiments.append(experiment)
-
-        # sauvegarde dans le fichier JSON
-        self.save_to_json()
-
-        # affiche un message de succès
-        messagebox.showinfo("Success", "The design of experiments has been saved.")
-
-        # retourne à la page des templates
+        # retour à la page principale
         self.show_template_view()
 
     def validate_type(self, param_name, value):
@@ -768,42 +722,319 @@ class SolpocInterface(tk.Tk):
         # sinon la valeur est invalide
         return None
 
-    def save_to_json(self):
-        with open(self.json_file, "w", encoding="utf-8") as f:
-            json.dump(self.experiments, f, indent=4, ensure_ascii=False)
+    def parse_value(self, raw: str, json_key: str):
+        raw = raw.strip()
+
+        # null si vide ou None
+        if raw == "" or raw.lower() in ("none", "null"):
+            return None
+
+        # booléens
+        if raw.lower() == "true":
+            return True
+        if raw.lower() == "false":
+            return False
+
+        # listes de nombres : "280, 2505, 5" → [280, 2505, 5]
+        list_keys = {"Wl", "Th_range", "n_range", "vf_range"}
+        if json_key in list_keys:
+            cleaned = raw.strip("[]() ")
+            parts = [p.strip() for p in cleaned.split(",") if p.strip()]
+            result = []
+            for p in parts:
+                try:
+                    result.append(int(p))
+                except ValueError:
+                    result.append(float(p))
+            return result
+
+        # entiers
+        if json_key in {"pop_size", "budget", "nb_run", "cpu_used", "nb_layer"}:
+            try:
+                return int(float(raw))
+            except ValueError:
+                return raw
+
+        # floats
+        if json_key in {
+            "crossover_rate",
+            "f1",
+            "f2",
+            "Ang",
+            "Th_Substrate",
+            "Lambda_cut_1",
+            "Lambda_cut_2",
+            "lambda_cut_1",
+            "lambda_cut_2",
+            "C",
+            "T_air",
+            "T_abs",
+        }:
+            try:
+                return float(raw)
+            except ValueError:
+                return raw
+
+        # seed : None ou entier
+        if json_key == "seed":
+            if raw.lower() in ("none", "null", ""):
+                return None
+            try:
+                return int(raw)
+            except ValueError:
+                return None
+
+        # strings propres sans guillemets
+        if json_key in {"mutation_DE", "Comment", "Mode_choose_material"}:
+            return raw.strip("\"'")
+
+        # Mat_Stack : liste de strings
+        if json_key in {"Mat_Stack", "Mat_Option"}:
+            if raw.startswith("["):
+                try:
+                    import ast
+
+                    parsed = ast.literal_eval(raw)
+                    if isinstance(parsed, list):
+                        return parsed
+                except Exception:
+                    pass
+            # "BK7, TiO2" → ["BK7", "TiO2"]
+            return [p.strip().strip("\"'") for p in raw.split(",") if p.strip()]
+
+        # d_Stack_Opt : liste mixte "no, no, 10" → ["no", "no", 10]
+        if json_key == "d_Stack_Opt":
+            if raw.startswith("["):
+                try:
+                    import ast
+
+                    return ast.literal_eval(raw)
+                except Exception:
+                    pass
+            parts = [p.strip().strip("\"'") for p in raw.split(",") if p.strip()]
+            result = []
+            for p in parts:
+                try:
+                    result.append(float(p) if "." in p else int(p))
+                except ValueError:
+                    result.append(p)
+            return result
+
+        # fallback générique
+        try:
+            import ast
+
+            parsed = ast.literal_eval(raw)
+            if isinstance(parsed, tuple):
+                return list(parsed)
+            return parsed
+        except Exception:
+            pass
+
+        return raw.strip("\"'")
+
+    def build_and_save_json(
+        self, parameter_entries: dict, priority: int, firstname: str, lastname: str
+    ) -> str:
+
+        # schéma de base avec tous les champs à null
+        experiment = {
+            "template": self.selected_template,
+            "Comment": None,
+            "Wl": None,
+            "open_SolSpec": None,
+            "open_Spec_Signal": None,
+            "Ang": 0,
+            "Sol_Spec": None,
+            "name_Sol_Spec": None,
+            "d_Stack": None,
+            "Mat_Stack": None,
+            "n_Stack": None,
+            "k_Stack": None,
+            "vf": None,
+            "Th_range": None,
+            "Th_Substrate": None,
+            "vf_range": None,
+            "Lambda_cut_1": None,
+            "Lambda_cut_2": None,
+            "pop_size": None,
+            "crossover_rate": None,
+            "f1": None,
+            "f2": None,
+            "mutation_DE": None,
+            "budget": None,
+            "nb_run": None,
+            "cpu_used": None,
+            "seed": None,
+            "algo": None,
+            "cost_function": None,
+            "selection": None,
+            "nb_layer": None,
+            "n_range": None,
+            "d_Stack_Opt": None,
+            "C": None,
+            "T_air": None,
+            "T_abs": None,
+            "Signal_H_eye": None,
+            "poids_PV": None,
+            "Signal_PV": None,
+            "Signal_Th": None,
+            "Signal_fit": None,
+            "Signal_fit_2": None,
+            "precision_AlgoG": None,
+            "mutation_rate": None,
+            "mutation_delta": None,
+            "evaluate_rate": None,
+            "Mat_Option": None,
+            "coherency_limit": None,
+            "Mode_choose_material": None,
+            "priority": priority,
+            "not_use": False,
+        }
+
+        # correspondance label UI : clé JSON
+        ui_label_to_json_key = {
+            "Comment": "Comment",
+            "Mat_Stack": "Mat_Stack",
+            "Wl (start, stop, step)": "Wl",
+            "Th_Substrate (nm)": "Th_Substrate",
+            "Th_range (min, max)": "Th_range",
+            "n_range (min, max)": "n_range",
+            "nb_layer": "nb_layer",
+            "Ang (°)": "Ang",
+            "pop_size": "pop_size",
+            "crossover_rate": "crossover_rate",
+            "f1": "f1",
+            "f2": "f2",
+            "mutation_DE": "mutation_DE",
+            "budget": "budget",
+            "nb_run": "nb_run",
+            "cpu_used": "cpu_used",
+            "seed": "seed",
+            "d_Stack_Opt": "d_Stack_Opt",
+            "Lambda_cut_1 (nm)": "Lambda_cut_1",
+            "lambda_cut_1 (nm)": "lambda_cut_1",
+            "lambda_cut_2 (nm)": "lambda_cut_2",
+            "Mat_Option": "Mat_Option",
+            "Mode_choose_material": "Mode_choose_material",
+            "vf_range (min, max)": "vf_range",
+            "C": "C",
+            "T_air (K)": "T_air",
+            "T_abs (K)": "T_abs",
+        }
+
+        # remplissage avec les valeurs saisies par l'utilisateur
+        for ui_label, entry_widget in parameter_entries.items():
+            # on ignore les champs internes (__priority__, __firstname__...)
+            if ui_label.startswith("__"):
+                continue
+
+            json_key = ui_label_to_json_key.get(ui_label, ui_label)
+            raw_value = entry_widget.get().strip()
+            experiment[json_key] = self.parse_value(raw_value, json_key)
+
+        # nom de fichier : Template_Prenom_Nom_date_heure.json
+        folder = "plans_experiences"
+        os.makedirs(folder, exist_ok=True)
+
+        template_slug = self.selected_template.replace(" ", "_")
+        firstname_slug = firstname.strip().replace(" ", "_")
+        lastname_slug = lastname.strip().replace(" ", "_")
+        timestamp = datetime.now().strftime("%Y-%m-%d_%Hh%M")
+        filename = f"{template_slug}_{firstname_slug}_{lastname_slug}_{timestamp}.json"
+        filepath = os.path.join(folder, filename)
+
+        # sauvegarde
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(experiment, f, indent=4, ensure_ascii=False)
+
+        return filepath
 
     def refresh_summary(self):
         # vide la zone de texte
         self.summary_text.delete("1.0", tk.END)
 
-        # si aucun plan enregistré, affiche un message
-        if not self.experiments:
+        folder = "plans_experiences"
+
+        # dossier inexistant ou vide
+        if not os.path.exists(folder):
             self.summary_text.insert(
                 tk.END, "No experimental designs have been saved yet."
             )
             return
 
-        # parcourt tous les plans enregistrés
-        for i, exp in enumerate(self.experiments, start=1):
-            # crée les lignes à afficher
-            lignes = [
-                f"Plan {i}",
-                f"Template : {exp['template']}",
-                f"Priority : {exp.get('priority', 'N/A')}",
-                f"Author : {exp.get('author', {}).get('first_name', 'N/A')} {exp.get('author', {}).get('last_name', '')}",
-                # f"Date : {exp.get('date', 'N/A')}",
-            ]
+        # liste les fichiers json triés par date
+        files = sorted(f for f in os.listdir(folder) if f.endswith(".json"))
 
-            # ajoute chaque paramètre du plan
-            lignes += [
-                f"  - {key} : {value}" for key, value in exp["parameters"].items()
-            ]
+        if not files:
+            self.summary_text.insert(
+                tk.END, "No experimental designs have been saved yet."
+            )
+            return
 
-            # ajoute une ligne vide pour séparer
-            lignes.append("")
+        # clés internes à ne pas afficher
+        meta_keys = {
+            "template",
+            "Comment",
+            "priority",
+            "not_use",
+            "open_SolSpec",
+            "open_Spec_Signal",
+            "Sol_Spec",
+            "name_Sol_Spec",
+            "algo",
+            "cost_function",
+            "selection",
+            "Signal_H_eye",
+            "poids_PV",
+            "Signal_PV",
+            "Signal_Th",
+            "Signal_fit",
+            "Signal_fit_2",
+            "precision_AlgoG",
+            "mutation_rate",
+            "mutation_delta",
+            "evaluate_rate",
+            "coherency_limit",
+            "n_Stack",
+            "k_Stack",
+            "vf",
+            "d_Stack",
+        }
 
-            # affiche le tout dans la zone texte
-            self.summary_text.insert(tk.END, "\n".join(lignes) + "\n")
+        # affiche chaque plan
+        for i, filename in enumerate(files, start=1):
+            filepath = os.path.join(folder, filename)
+            with open(filepath, "r", encoding="utf-8") as f:
+                exp = json.load(f)
+
+            status = "pending" if not exp.get("not_use") else "done"
+
+            # séparateur entre plans
+            separator = "─" * 60
+            self.summary_text.insert(tk.END, f"{separator}\n")
+
+            # en-tête du plan
+            self.summary_text.insert(
+                tk.END, f"  Plan {i} : {exp.get('template', '?')}\n"
+            )
+            self.summary_text.insert(tk.END, f"  File: {filename}\n")
+            self.summary_text.insert(tk.END, f"  Comment: {exp.get('Comment', '')}\n")
+            self.summary_text.insert(
+                tk.END, f"  Priority : {exp.get('priority', '?')}   Status : {status}\n"
+            )
+            self.summary_text.insert(tk.END, f"\n")
+
+            # paramètres
+            for key, value in exp.items():
+                if key in meta_keys or value is None:
+                    continue
+                self.summary_text.insert(tk.END, f"    • {key} : {value}\n")
+
+            self.summary_text.insert(tk.END, f"\n")
+
+        # séparateur final
+        self.summary_text.insert(tk.END, "─" * 60 + "\n")
 
 
 if __name__ == "__main__":
