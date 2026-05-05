@@ -1,4 +1,3 @@
-from curses import raw
 import tkinter as tk
 from tkinter import messagebox, ttk
 import json
@@ -22,9 +21,7 @@ class SolpocInterface(tk.Tk):
         # template cliqué dans la liste mais pas encore confirmé
         self.selected_template_f = None
 
-        self.experiments = []
         self.parameter_entries = {}
-        self.json_file = "plans_experiences.json"
 
         self.templates_config = {
             "AR": [
@@ -550,20 +547,26 @@ class SolpocInterface(tk.Tk):
 
     def validate_parameters(self):
 
-        # vérification que tous les champs template sont remplis
+        # vérification que tous les champs template sont remplis et du bon type
         for param_name, entry in self.parameter_entries.items():
             if param_name.startswith("__"):
                 continue
-            if not entry.get().strip():
-                messagebox.showwarning("Attention", f"Veuillez remplir : {param_name}")
+
+            value = entry.get().strip()
+
+            if not value:
+                messagebox.showwarning("Warning", f"Please fill out : {param_name}")
+                return
+
+            if not self.validate_type(param_name, value):
+                messagebox.showwarning(
+                    "Incorrect type",
+                    f"The '{param_name}' field is of the wrong type",
+                )
                 return
 
         # récupère la priorité
-        try:
-            priority = int(self.meta_entries["Priority"].get())
-        except (ValueError, KeyError):
-            messagebox.showwarning("Attention", "La priorité doit être un entier.")
-            return
+        priority = int(self.meta_entries["Priority"].get())
 
         # récupère prénom et nom
         firstname = self.meta_entries.get("First name")
@@ -664,14 +667,21 @@ class SolpocInterface(tk.Tk):
 
         # vérifie une longueur d'onde
         if param_type == "wavelength":
-            return (
-                value.startswith("np.arange(")
-                or value.startswith("sol.Wl_selectif(")
-                or self.value_list(value)
-            )
+            # accepte np.arange(280, 2505, 5)
+            if value.startswith("np.arange(") or value.startswith("sol.Wl_selectif("):
+                return True
 
-        # accepte par défaut si aucun cas spécifique
-        return True
+            # accepte [400, 800, 5] ou 400, 800, 5
+            cleaned = value.strip("[]() ")
+            parts = [p.strip() for p in cleaned.split(",") if p.strip()]
+            if len(parts) == 3:
+                try:
+                    [float(p) for p in parts]
+                    return True
+                except ValueError:
+                    return False
+
+            return False
 
     def value_list(self, value):
         try:
@@ -792,8 +802,6 @@ class SolpocInterface(tk.Tk):
         if json_key in {"Mat_Stack", "Mat_Option"}:
             if raw.startswith("["):
                 try:
-                    import ast
-
                     parsed = ast.literal_eval(raw)
                     if isinstance(parsed, list):
                         return parsed
