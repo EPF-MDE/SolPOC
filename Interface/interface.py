@@ -15,7 +15,12 @@ class SolpocInterface(tk.Tk):
         self.geometry("1100x600")
         self.configure(bg="grey")
 
+        # template confirmé par le bouton 
         self.selected_template = None
+        
+        # template cliqué dans la liste mais pas encore confirmé
+        self.selected_template_f = None
+
         self.experiments = []
         self.parameter_entries = {}
         self.json_file = "plans_experiences.json"
@@ -351,16 +356,20 @@ class SolpocInterface(tk.Tk):
             nav_frame, text="Parameters", width=20, command=self.show_parameters_view
         ).grid(row=0, column=1, padx=5)
 
+
     def create_content_area(self):
         self.content_frame = tk.Frame(self, bg="black")
         self.content_frame.pack(fill="both", expand=True, padx=20, pady=(0, 20))
 
+
     def create_label(self, parent, text, font=("Arial", 12), bg="black", fg="white"):
         return tk.Label(parent, text=text, font=font, bg=bg, fg=fg)
+
 
     def clear_content(self):
         for widget in self.content_frame.winfo_children():
             widget.destroy()
+
 
     def show_template_view(self):
         # vide la zone principale
@@ -407,15 +416,22 @@ class SolpocInterface(tk.Tk):
         # met à jour le résumé
         self.refresh_summary()
 
+
     def on_template_selected(self, event):
         selection = self.template_listbox.curselection()
         if selection:
-            self.selected_template = self.template_listbox.get(selection[0])
+            self.selected_template_f = self.template_listbox.get(selection[0])
+
 
     def confirm_template_selection(self):
-        if not self.selected_template:
+        # Verifie qu'un template a ete selectioné
+        if not self.selected_template_f:
             messagebox.showwarning("Wait", "Please select a template.")
             return
+        # Confirm le template selectioné
+        self.selected_template = self.selected_template_f
+
+        # Message de confirmation
         messagebox.showinfo(
             "Selected template", f"Selected template : {self.selected_template}"
         )
