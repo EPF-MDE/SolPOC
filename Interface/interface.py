@@ -1,9 +1,10 @@
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox, ttk
 import json
 import re
 import os
 import ast
+from datetime import datetime
 
 
 class SolpocInterface(tk.Tk):
@@ -477,6 +478,28 @@ class SolpocInterface(tk.Tk):
         # nombre de colonnes par ligne
         cols_per_row = 3
 
+        # champs d'informations générales
+        self.meta_entries = {}
+
+        meta_frame = tk.Frame(container, bg="black")
+        meta_frame.pack(fill="x", padx=20, pady=10)
+
+        # meta_fields = ["Priority", "First name", "Last name", "Date"]
+        meta_fields = ["Priority", "First name", "Last name"]
+
+        for i, field in enumerate(meta_fields):
+            self.create_label(meta_frame, field).grid(row=0, column=i * 2, padx=10, pady=5)
+
+            if field == "Priority":
+                entry = ttk.Combobox(meta_frame, value=[1, 2, 3], width=18, state="readonly")
+                entry.current(0)  # valeur par défaut = 1
+            else : 
+                entry = tk.Entry(meta_frame, width=20)
+                
+            entry.grid(row=0, column=i * 2 + 1, padx=10, pady=5)
+
+            self.meta_entries[field] = entry
+
         # crée les champs dynamiquement
         for i, param_name in enumerate(parameters):
             row = i // cols_per_row
@@ -498,6 +521,10 @@ class SolpocInterface(tk.Tk):
             # stocke le champ
             self.parameter_entries[param_name] = entry
 
+            # Rentre la date automatiquement
+            # if field == "Date":
+                # entry.insert(0, datetime.now().strftime("%d/%m/%Y"))
+
         # frame pour le bouton en bas
         bottom_frame = tk.Frame(container, bg="black")
         bottom_frame.pack(fill="x", pady=20)
@@ -511,6 +538,23 @@ class SolpocInterface(tk.Tk):
     def validate_parameters(self):
         # dictionnaire qui stocke les valeurs saisies
         parameter_values = {}
+
+        # récupère les informations générales
+        meta_values = {}
+
+        for field, entry in self.meta_entries.items():
+            value = entry.get().strip()
+
+            if not value:
+                messagebox.showwarning("Wait", f"Please fill in the field : {field}")
+                return
+
+            meta_values[field] = value
+
+            # Verifie que la priorité est bien 1, 2, 3
+            if meta_values["Priority"] not in ["1", "2", "3"]:
+                messagebox.showwarning("Incorrect type", "Priority must be 1, 2 or 3.")
+                return
 
         # parcourt tous les champs de paramètres
         for param_name, entry in self.parameter_entries.items():
@@ -549,6 +593,12 @@ class SolpocInterface(tk.Tk):
         # crée le plan d'expérience
         experiment = {
             "template": self.selected_template,
+            "priority": int(meta_values["Priority"]),
+            "identity": {
+                "firstname":meta_values["First name"],
+                "lastname":meta_values["Last name"],
+            },
+            "date":meta_values["Date"],
             "parameters": parameter_values,
         }
 
@@ -728,7 +778,13 @@ class SolpocInterface(tk.Tk):
         # parcourt tous les plans enregistrés
         for i, exp in enumerate(self.experiments, start=1):
             # crée les lignes à afficher
-            lignes = [f"Plan {i}", f"Template : {exp['template']}"]
+            lignes = [
+                f"Plan {i}",
+                f"Template : {exp['template']}",
+                f"Priority : {exp.get('priority', 'N/A')}",
+                f"Author : {exp.get('author', {}).get('first_name', 'N/A')} {exp.get('author', {}).get('last_name', '')}",
+                # f"Date : {exp.get('date', 'N/A')}",
+            ]
 
             # ajoute chaque paramètre du plan
             lignes += [
