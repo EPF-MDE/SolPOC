@@ -6,6 +6,8 @@ import os
 import ast
 from datetime import datetime
 
+from sympy import content
+
 
 class SolpocInterface(tk.Tk):
     def __init__(self):
@@ -244,6 +246,16 @@ class SolpocInterface(tk.Tk):
         with open(filepath, "r", encoding="utf-8") as f:
             content = f.read()
 
+        # Limite la recherche à la zone des paramètres
+        start_marker = "SCRIPT PARAMETERS - START"
+        end_marker = "SCRIPT PARAMETERS - END"
+
+        start_idx = content.find(start_marker)
+        end_idx = content.find(end_marker)
+
+        if start_idx != -1 and end_idx != -1:
+            content = content[start_idx:end_idx]
+
         # Dictionnaire qui va contenir les valeurs par default
         defaults = {}
 
@@ -324,6 +336,13 @@ class SolpocInterface(tk.Tk):
         # Cas d'un texte : on enlève simplement les guillemets
         if param_type == "text":
             return raw_value.strip('"').strip("'")
+
+        # Cas d'un nombre : on évalue l'expression
+        if param_type == "number":
+            try:
+                return str(eval(raw_value))
+            except Exception:
+                return raw_value
 
         # Cas d'une longueur d'onde : on enlève np.arange( ) et les parenthèses
         if param_type == "wavelength":
