@@ -515,6 +515,29 @@ if __name__ == "__main__":
             f"{len(failed_rows)} lignes échouées sauvegardées dans 'failed_experiments.json'."
         )
 
+    # Supprimer les dossiers vides créés en dehors de runs
+    for item in os.listdir("."):
+        if (
+            os.path.isdir(item)
+            and not item.startswith("runs")
+            and item.startswith("2026-")
+        ):
+            try:
+                os.rmdir(item)  # Supprime seulement si vide
+                print(f"Dossier vide supprimé : {item}")
+            except OSError:
+                pass  # Pas vide, on passe
+
+    # Supprimer les dossiers vides à l'intérieur de runs
+    if os.path.isdir("runs"):
+        for root, dirs, files in os.walk("runs", topdown=False):
+            if not dirs and not files:
+                try:
+                    os.rmdir(root)
+                    print(f"Dossier vide supprimé dans runs : {root}")
+                except OSError:
+                    pass  # Pas vide ou impossible à supprimer
+
 
 # IMPORTANT
 # Tout les paramètres ne sont pas dans la fonctions get_parameters comme Wl_Sol, Sol_Spec, name_Sol_Spec
