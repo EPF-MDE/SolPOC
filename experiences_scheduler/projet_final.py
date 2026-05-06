@@ -10,6 +10,7 @@ import solpoc as sol
 from datetime import datetime
 from multiprocessing import Pool, cpu_count
 import json
+import function_R_s_weighted as test
 
 file_json = "plan_test.json"  # Fichier JSON contenant les plans d'expérience
 # file_json = "test_unitaire.json"  # Fichier JSON de test unitaire
