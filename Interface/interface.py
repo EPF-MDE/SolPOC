@@ -268,7 +268,7 @@ class SolpocInterface(tk.Tk):
                     for param, var in self.param_to_var.items():
                         # Si la variable correspond on stocke la valeur
                         if var == var_name:
-                            defaults[param] = value
+                            defaults[param] = self.simplify_default(param, value)
 
         # Gestion classique
 
@@ -293,6 +293,12 @@ class SolpocInterface(tk.Tk):
 
         # Cas d'une liste Python
         if param_type == "list":
+            # Cas sol.write_stack_period(["A"], ["B", "C"], 10) → on extrait tous les strings
+            if "write_stack_period" in raw_value or "write_stack" in raw_value:
+                materials = re.findall(r'["\']([^"\']+)["\']', raw_value)
+                if materials:
+                    return ", ".join(materials)
+
             try:
                 values = ast.literal_eval(raw_value)
 
