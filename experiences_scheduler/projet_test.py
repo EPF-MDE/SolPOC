@@ -191,6 +191,7 @@ cpu_used = 4  # Number of CPU used. /!\ be "raisonable", regarding the real numb
 
 # ordre exact des colonnes
 columns = [
+    "template",
     "Comment",
     "Wl",
     "open_SolSpec",
@@ -282,6 +283,8 @@ if __name__ == "__main__":
         else:
             min_priority = df_filtered["priority"].min()
             first_min_row = df_filtered[df_filtered["priority"] == min_priority].iloc[0]
+            template_name = first_min_row["template"]
+            # first_min_row.drop("template", inplace=True)  # on drop la colonne template qui ne sert plus a rien et qui peut poser probleme pour les parametres de get_parameters
             # print(f"\nPremière ligne avec priorité minimale : \n{first_min_row}")
 
         first_index = first_min_row.name  # .name renvoie l'index
@@ -470,7 +473,7 @@ if __name__ == "__main__":
         # Dossier spécifique à cette expérience
 
         directory = os.path.join(
-            global_run_dir, f"row{first_index}_priority{first_min_row['priority']}"
+            global_run_dir, f"{template_name}_priority{first_min_row['priority']}"
         )
         os.makedirs(directory, exist_ok=True)
 
@@ -504,7 +507,7 @@ if __name__ == "__main__":
         try:
             with open("failed_experiments.json", "r", encoding="utf-8") as f:
                 existing_failed = json.load(f)
-        except FileNotFoundError:
+        except (FileNotFoundError, json.JSONDecodeError):
             existing_failed = []
         existing_failed.extend(failed_rows)
         with open("failed_experiments.json", "w", encoding="utf-8") as f:

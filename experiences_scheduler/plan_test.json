@@ -1,5 +1,6 @@
 [
   {
+    "template": "AR",
     "Comment": "Tutorial : anti-reflective coating for human eye, with research of the best theorical refractiv index",
     "Wl": [
       280,
@@ -60,9 +61,10 @@
     "coherency_limit": null,
     "Mode_choose_material": null,
     "priority": 3,
-    "not_use": true
+    "not_use": false
   },
   {
+    "template": "PV Cells",
     "Comment": "Tutorial : anti-reflective coating for Si PV-Cell",
     "Wl": [
       280,
@@ -126,9 +128,10 @@
     "coherency_limit": null,
     "Mode_choose_material": null,
     "priority": 1,
-    "not_use": true
+    "not_use": false
   },
   {
+    "template": "Low-e",
     "Comment": "A low emissivity coating for building",
     "Wl": [
       280,
@@ -200,9 +203,10 @@
     "coherency_limit": null,
     "Mode_choose_material": null,
     "priority": 1,
-    "not_use": true
+    "not_use": false
   },
   {
+    "template": "Spectral Splitting",
     "Comment": "Exemple of spectral-splitting coating (dichroic mirror) for PV-CST, 20 layers of SiO2/TiO2",
     "Wl": [
       280,
@@ -261,9 +265,10 @@
     "coherency_limit": null,
     "Mode_choose_material": null,
     "priority": 2,
-    "not_use": true
+    "not_use": false
   },
   {
+    "template": "Selective Coating",
     "Comment": "Tutorial : selective coating for solar thermal systems, like CSP",
     "Wl": "Wl_selectif",
     "open_SolSpec": "'Materials/SolSpec.txt', 'DC'",
@@ -323,9 +328,10 @@
     "coherency_limit": null,
     "Mode_choose_material": null,
     "priority": 2,
-    "not_use": true
+    "not_use": false
   },
   {
+    "template": "Fail",
     "Comment": "Tutorial : selective coating for solar thermal systems, like CSP",
     "Wl": "Wl_selectif",
     "open_SolSpec": "'Materials/SolSpec.txt', 'DC'",
@@ -380,6 +386,6 @@
     "coherency_limit": null,
     "Mode_choose_material": null,
     "priority": 1,
-    "not_use": true
+    "not_use": false
   }
 ]
