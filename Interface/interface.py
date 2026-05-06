@@ -458,29 +458,8 @@ class SolpocInterface(tk.Tk):
             container, f"Parameters - {self.selected_template}", ("Arial", 16, "bold")
         ).pack(pady=20)
 
-        # conteneur pour le scroll
-        scroll_container = tk.Frame(container, bg="black")
-        scroll_container.pack(fill="both", expand=True)
-
-        # création canvas + scrollbar
-        canvas = tk.Canvas(scroll_container, bg="black", highlightthickness=0)
-        scrollbar = tk.Scrollbar(
-            scroll_container, orient="vertical", command=canvas.yview
-        )
-        scroll_frame = tk.Frame(canvas, bg="black")
-
-        # ajuste la zone scrollable
-        scroll_frame.bind(
-            "<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
-        )
-
-        # ajoute le frame dans le canvas
-        canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
-        canvas.configure(yscrollcommand=scrollbar.set)
-
-        # affichage canvas + scrollbar
-        canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
+        scroll_frame = tk.Frame(container, bg="black")
+        scroll_frame.pack(fill="both", expand=True, padx=20, pady=10)
 
         # reset des champs
         self.parameter_entries = {}
