@@ -1,4 +1,5 @@
 # Experiment Scheduler
+<img width="1440" height="1240" alt="image" src="https://github.com/user-attachments/assets/bf08c778-c20f-4fa0-84a5-87b9e8d0174f" />
 
 ## What is it?
 
@@ -193,3 +194,6 @@ experiences_plans/plan_executer/
 These files are then used by the scheduler to execute experiments automatically.
 
 This interface makes experiment creation faster, easier, and more reliable.
+
+
+
