@@ -246,6 +246,15 @@ class SolpocInterface(tk.Tk):
         with open(filepath, "r", encoding="utf-8") as f:
             content = f.read()
 
+            # Garde uniquement la partie "modifiable" du template (ignore le code interne et les lignes commentées comme seed)
+            content = content.split("# %% You should stop modifying")[0]
+
+            # Supprime les lignes commentées
+            content = "\n".join(
+                line for line in content.splitlines()
+                if not line.strip().startswith("#")
+            )
+
         # Limite la recherche à la zone des paramètres
         start_marker = "SCRIPT PARAMETERS - START"
         end_marker = "SCRIPT PARAMETERS - END"
@@ -295,6 +304,10 @@ class SolpocInterface(tk.Tk):
             if match:
                 raw = match.group(1).strip()
                 defaults[param] = self.simplify_default(param, raw)
+
+        # Gestion de la seed
+        if "seed" in self.templates_config[self.selected_template] and "seed" not in defaults:
+            defaults["seed"] = "None"
 
         return defaults
 
@@ -959,6 +972,7 @@ class SolpocInterface(tk.Tk):
             json.dump(experiment, f, indent=4, ensure_ascii=False)
 
         return filepath
+
 
     def refresh_summary(self):
         # vide la zone de texte
