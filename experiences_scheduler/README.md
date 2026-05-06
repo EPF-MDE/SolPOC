@@ -35,7 +35,7 @@ The scheduler supports several SolPOC workflows, including:
 
 ### 1. Create an experiment plan
 
-The interface is used to generate a JSON experiment file containing:
+The interface is used to generate severals JSON experiment file containing:
 
 * optical stack definitions,
 * optimization parameters,
@@ -146,5 +146,18 @@ Generated outputs are automatically organized into global `runs/` directories fo
 
 ## Interface
 
-To be completed by the Interface team.
+The interface allows users to create experiment plans through a graphical interface.
 
+Workflow
+
+Launch the application to open the SOLPOC UI.
+Select an experiment template from the dropdown menu.
+Click "Add Template" to open the parameter page.
+Modify the experiment parameters if necessary.
+Click "Add" to save the experiment to the summary.
+The experiment appears on the home page and is automatically converted into a JSON file.
+
+Output
+
+The generated JSON file is then used by the scheduler to execute the experiments automatically.
+This interface makes experiment creation faster, easier and more reliable
