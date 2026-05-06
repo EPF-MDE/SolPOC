@@ -900,8 +900,6 @@ class SolpocInterface(tk.Tk):
             "Mat_Option": None,
             "coherency_limit": None,
             "Mode_choose_material": None,
-            "priority": priority,
-            "not_use": False,
         }
 
         # correspondance label UI : clé JSON
@@ -953,7 +951,7 @@ class SolpocInterface(tk.Tk):
         firstname_slug = firstname.strip().replace(" ", "_")
         lastname_slug = lastname.strip().replace(" ", "_")
         timestamp = datetime.now().strftime("%Y-%m-%d_%Hh%M")
-        filename = f"{template_slug}_{firstname_slug}_{lastname_slug}_{timestamp}.json"
+        filename = f"{template_slug}_{priority}_{firstname_slug}_{lastname_slug}_{timestamp}.json"
         filepath = os.path.join(folder, filename)
 
         # sauvegarde
@@ -988,8 +986,6 @@ class SolpocInterface(tk.Tk):
         meta_keys = {
             "template",
             "Comment",
-            "priority",
-            "not_use",
             "open_SolSpec",
             "open_Spec_Signal",
             "Sol_Spec",
@@ -1020,21 +1016,15 @@ class SolpocInterface(tk.Tk):
             with open(filepath, "r", encoding="utf-8") as f:
                 exp = json.load(f)
 
-            status = "pending" if not exp.get("not_use") else "done"
+            priority_from_filename = filename.split("_")[0]
 
-            # séparateur entre plans
-            separator = "─" * 60
-            self.summary_text.insert(tk.END, f"{separator}\n")
-
-            # en-tête du plan
+            self.summary_text.insert(tk.END, "─" * 60 + "\n")
             self.summary_text.insert(
                 tk.END, f"  Plan {i} : {exp.get('template', '?')}\n"
             )
             self.summary_text.insert(tk.END, f"  File: {filename}\n")
             self.summary_text.insert(tk.END, f"  Comment: {exp.get('Comment', '')}\n")
-            self.summary_text.insert(
-                tk.END, f"  Priority : {exp.get('priority', '?')}   Status : {status}\n"
-            )
+            self.summary_text.insert(tk.END, f"  Priority : {priority_from_filename}\n")
             self.summary_text.insert(tk.END, f"\n")
 
             # paramètres
