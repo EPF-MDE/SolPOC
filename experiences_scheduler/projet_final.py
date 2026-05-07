@@ -125,7 +125,10 @@ def main_for_parameters(
 
 def build_wl(Wl):
     if isinstance(Wl, str):
-        return getattr(sol, Wl)()
+        try:
+            return getattr(test, Wl)()
+        except (AttributeError, Exception):
+            return getattr(sol, Wl)()
     elif isinstance(Wl, list) and len(Wl) == 3:
         start, stop, step = Wl
         return np.arange(start, stop, step)
@@ -309,24 +312,47 @@ if __name__ == "__main__":
             func_name = first_min_row["Mat_Stack"].split("(")[0]
             args_str = first_min_row["Mat_Stack"].split("(")[1].rstrip(")")
             args = eval(f"[{args_str}]")
-            first_min_row["Mat_Stack"] = getattr(sol, func_name)(*args)
+            try:
+                first_min_row["Mat_Stack"] = getattr(test, func_name)(*args)
+            except (AttributeError, Exception):
+                first_min_row["Mat_Stack"] = getattr(sol, func_name)(*args)
 
         # Pour selection
         if first_min_row.get("selection") is not None:
-            selection = getattr(sol, first_min_row["selection"])
-            first_min_row["selection"] = getattr(sol, first_min_row["selection"])
+            try:
+                selection = getattr(test, first_min_row["selection"])
+            except (AttributeError, Exception):
+                selection = getattr(sol, first_min_row["selection"])
+            try:
+                first_min_row["selection"] = getattr(test, first_min_row["selection"])
+            except (AttributeError, Exception):
+                first_min_row["selection"] = getattr(sol, first_min_row["selection"])
 
         # Pour algo
         if first_min_row.get("algo") is not None:
-            algo = getattr(sol, first_min_row["algo"])
-            first_min_row["algo"] = getattr(sol, first_min_row["algo"])
+            try:
+                algo = getattr(test, first_min_row["algo"])
+            except (AttributeError, Exception):
+                algo = getattr(sol, first_min_row["algo"])
+            try:
+                first_min_row["algo"] = getattr(test, first_min_row["algo"])
+            except (AttributeError, Exception):
+                first_min_row["algo"] = getattr(sol, first_min_row["algo"])
 
         # Pour cost_function
         if first_min_row.get("cost_function") is not None:
-            cost_function = getattr(sol, first_min_row["cost_function"])
-            first_min_row["cost_function"] = getattr(
-                sol, first_min_row["cost_function"]
-            )
+            try:
+                cost_function = getattr(test, first_min_row["cost_function"])
+            except (AttributeError, Exception):
+                cost_function = getattr(sol, first_min_row["cost_function"])
+            try:
+                first_min_row["cost_function"] = getattr(
+                    test, first_min_row["cost_function"]
+                )
+            except (AttributeError, Exception):
+                first_min_row["cost_function"] = getattr(
+                    sol, first_min_row["cost_function"]
+                )
 
         # print(f"\nPremière ligne avec priorité minimale apres transformation : \n{first_min_row}")
 
@@ -335,9 +361,14 @@ if __name__ == "__main__":
             args = [
                 a.strip().strip("'\"") for a in first_min_row["open_SolSpec"].split(",")
             ]
-            Wl_Sol, first_min_row["Sol_Spec"], first_min_row["name_Sol_Spec"] = getattr(
-                sol, "open_SolSpec"
-            )(*args)
+            try:
+                Wl_Sol, first_min_row["Sol_Spec"], first_min_row["name_Sol_Spec"] = (
+                    getattr(test, "open_SolSpec")(*args)
+                )
+            except (AttributeError, Exception):
+                Wl_Sol, first_min_row["Sol_Spec"], first_min_row["name_Sol_Spec"] = (
+                    getattr(sol, "open_SolSpec")(*args)
+                )
             name_Sol_Spec = first_min_row["name_Sol_Spec"]
 
         if isinstance(first_min_row["open_Spec_Signal"], str):
@@ -347,9 +378,14 @@ if __name__ == "__main__":
             ]
             # convertir en int les arguments qui sont des nombres
             args = [int(a) if a.isdigit() else a for a in args]
-            Wl_PV, first_min_row["Signal_PV"], name_PV = getattr(
-                sol, "open_Spec_Signal"
-            )(*args)
+            try:
+                Wl_PV, first_min_row["Signal_PV"], name_PV = getattr(
+                    test, "open_Spec_Signal"
+                )(*args)
+            except (AttributeError, Exception):
+                Wl_PV, first_min_row["Signal_PV"], name_PV = getattr(
+                    sol, "open_Spec_Signal"
+                )(*args)
 
         if first_min_row["Mat_Stack"] is not None and first_min_row["Wl"] is not None:
             first_min_row["n_Stack"], first_min_row["k_Stack"] = sol.Made_Stack(
