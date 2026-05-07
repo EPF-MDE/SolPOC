@@ -10,7 +10,14 @@ import solpoc as sol
 from datetime import datetime
 from multiprocessing import Pool, cpu_count
 import json
-import function_R_s_weighted as test
+
+try:
+    import function_R_s_weighted as test
+except ImportError:
+    print(
+        "WARNING: function_R_s_weighted module not found. Falling back to sol module."
+    )
+    test = sol
 
 file_json = "plan_test.json"  # Fichier JSON contenant les plans d'expérience
 # file_json = "test_unitaire.json"  # Fichier JSON de test unitaire
@@ -265,18 +272,15 @@ if __name__ == "__main__":
         with open(os.path.join("plan_experience", f), "r", encoding="utf-8") as file:
             plan = json.load(file)
             plan["filename"] = f  # Garder le nom du fichier
-            # Extraire la priorité du nom du fichier (format: template_priority.json)
-            priority_str = f.rsplit("_", 1)[0]  # Prend tout sauf le dernier _
-            priority_str = (
-                priority_str.rsplit("_", 1)[-1] if "_" in priority_str else priority_str
-            )
-            # Obtenir le dernier nombre du nom (la priorité)
-            import re
-
-            match = re.search(r"_(\d+)\.json$", f)
-            if match:
-                plan["priority"] = int(match.group(1))
-            else:
+            # Extraire la priorité du nom du fichier (format: nomtemplate_timestamp_ordredepriority.json)
+            # Le dernier segment après le dernier underscore (avant .json) est la priorité
+            filename_without_ext = f.replace(".json", "")  # Enlever .json
+            try:
+                priority_str = filename_without_ext.rsplit("_", 1)[
+                    -1
+                ]  # Obtenir le dernier segment
+                plan["priority"] = int(priority_str)
+            except (ValueError, IndexError):
                 plan["priority"] = 999  # Priorité par défaut si format incorrect
             plans.append(plan)
 
@@ -494,9 +498,14 @@ if __name__ == "__main__":
         global_run_dir = os.path.join("runs", launch_time_global)
         os.makedirs(global_run_dir, exist_ok=True)
 
+        # Capturer l'heure de résultat de ce plan d'expérience spécifique
+        result_time = datetime.now().strftime("%Hh%Mm%Ss")
+
         # Dossier spécifique à cette expérience
         priority = first_min_row.get("priority", "unknown")
-        directory = os.path.join(global_run_dir, f"{template_name}_priority{priority}")
+        directory = os.path.join(
+            global_run_dir, f"{template_name}_{result_time}_{priority}"
+        )
         os.makedirs(directory, exist_ok=True)
 
         parameters["directory"] = directory
@@ -544,7 +553,7 @@ if __name__ == "__main__":
         ):
             try:
                 os.rmdir(item)  # Supprime seulement si vide
-                print(f"Dossier vide supprimé : {item}")
+                # print(f"Dossier vide supprimé : {item}")
             except OSError:
                 pass  # Pas vide, on passe
 
