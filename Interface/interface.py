@@ -228,34 +228,28 @@ class SolpocInterface(tk.Tk):
         self.show_template_view()
 
     def load_defaults(self, template_name):
-        # Recupere le nom du fichier associé au template
         filename = self.file_map.get(template_name)
         if not filename:
             return {}
 
-        # Chemin vers le fichier template
         filepath = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "..", "Examples", filename
         )
 
-        # Verifie que le fichier existe
         if not os.path.exists(filepath):
             return {}
 
-        # Ouvre le fichier et lit le contenu
         with open(filepath, "r", encoding="utf-8") as f:
             content = f.read()
 
-            # Garde uniquement la partie "modifiable" du template (ignore le code interne et les lignes commentées comme seed)
             content = content.split("# %% You should stop modifying")[0]
 
-            # Supprime les lignes commentées
             content = "\n".join(
-                line for line in content.splitlines()
+                line
+                for line in content.splitlines()
                 if not line.strip().startswith("#")
             )
 
-        # Limite la recherche à la zone des paramètres
         start_marker = "SCRIPT PARAMETERS - START"
         end_marker = "SCRIPT PARAMETERS - END"
 
@@ -265,60 +259,43 @@ class SolpocInterface(tk.Tk):
         if start_idx != -1 and end_idx != -1:
             content = content[start_idx:end_idx]
 
-        # Dictionnaire qui va contenir les valeurs par default
         defaults = {}
 
-        # Gestion des affectations multiples (ex: f1, f2 = 0.9, 0.8)
-
-        # Toutes les lignes avec plusieurs variables à gauche
         lines = re.findall(r"([\w\s,]+)=\s*([^\n#]+)", content)
 
-        # Parcours chaque ligne trouvé
         for vars, values in lines:
-            # Sépare les variables
             vars_list = [v.strip() for v in vars.split(",")]
-
-            # Sépare les valeurs
             values_list = [v.strip() for v in values.split(",")]
 
-            # Verifie s'il y a autant de variables que de valeurs
             if len(vars_list) == len(values_list):
-                # Associe chaque variable à sa valeur
                 for var_name, value in zip(vars_list, values_list):
-                    # Parcourt les paramètres attendus par l’interface
                     for param, var in self.param_to_var.items():
-                        # Si la variable correspond on stocke la valeur
                         if var == var_name:
                             defaults[param] = self.simplify_default(param, value)
 
-        # Gestion classique
-
-        # Parcourt tous les paramètres attendus
         for param, var in self.param_to_var.items():
             if param in defaults:
                 continue
 
-            # Cherche une affectation simple
             match = re.search(rf"{var}\s*=\s*([^#\n]+)", content)
 
             if match:
                 raw = match.group(1).strip()
                 defaults[param] = self.simplify_default(param, raw)
 
-        # Gestion de la seed
-        if "seed" in self.templates_config[self.selected_template] and "seed" not in defaults:
+        if (
+            "seed" in self.templates_config[self.selected_template]
+            and "seed" not in defaults
+        ):
             defaults["seed"] = "None"
 
         return defaults
 
-    # Convertit une valeur brute du fichier template en format simplifié pour l'affichage.
     def simplify_default(self, param_name, raw_value):
 
         param_type = self.param_type.get(param_name, "text")
 
-        # Cas d'une liste Python
         if param_type == "list":
-            # Cas sol.write_stack_period(["A"], ["B", "C"], 10) → on extrait tous les strings
             if "write_stack_period" in raw_value or "write_stack" in raw_value:
                 materials = re.findall(r'["\']([^"\']+)["\']', raw_value)
                 if materials:
@@ -327,37 +304,31 @@ class SolpocInterface(tk.Tk):
             try:
                 values = ast.literal_eval(raw_value)
 
-                # Si la valeur est bien une liste, on enlève les crochets
                 if isinstance(values, list):
                     return ", ".join(str(v).strip('"').strip("'") for v in values)
 
             except (ValueError, SyntaxError):
                 pass
 
-        # Cas d'un intervalle
         if param_type == "range":
             try:
                 values = ast.literal_eval(raw_value)
 
-                # Si la valeur est un tuple de deux éléments, on enlève les parenthèses
                 if isinstance(values, tuple) and len(values) == 2:
                     return f"{values[0]}, {values[1]}"
 
             except (ValueError, SyntaxError):
                 pass
 
-        # Cas d'un texte : on enlève simplement les guillemets
         if param_type == "text":
             return raw_value.strip('"').strip("'")
 
-        # Cas d'un nombre : on évalue l'expression
         if param_type == "number":
             try:
                 return str(eval(raw_value))
             except Exception:
                 return raw_value
 
-        # Cas d'une longueur d'onde : on enlève np.arange( ) et les parenthèses
         if param_type == "wavelength":
             value = raw_value.strip()
             if value.startswith("np.arange(") and value.endswith(")"):
@@ -365,29 +336,23 @@ class SolpocInterface(tk.Tk):
             if value.startswith("sol.Wl_selectif(") and value.endswith(")"):
                 return value[len("sol.Wl_selectif(") : -1]
 
-        # Pour les autres types, on retourne la valeur telle quelle
         return raw_value
 
     def create_header(self):
-        # crée la barre du haut
         self.header_frame = tk.Frame(self, bg="black", height=150)
         self.header_frame.pack(fill="x", padx=20, pady=20)
 
-        # affiche le titre
         self.create_label(self.header_frame, "SOLPOC UI", ("Arial", 20, "bold")).pack(
             pady=(15, 10)
         )
 
-        # frame pour les boutons
         nav_frame = tk.Frame(self.header_frame, bg="black")
         nav_frame.pack()
 
-        # bouton pour aller sur la page templates
         tk.Button(
             nav_frame, text="Template", width=20, command=self.show_template_view
         ).grid(row=0, column=0, padx=5)
 
-        # bouton pour aller sur la page paramètres
         tk.Button(
             nav_frame, text="Parameters", width=20, command=self.show_parameters_view
         ).grid(row=0, column=1, padx=5)
@@ -404,88 +369,55 @@ class SolpocInterface(tk.Tk):
             widget.destroy()
 
     def show_template_view(self):
-        # vide la zone principale
         self.clear_content()
 
-        # frame gauche pour les templates
         left_frame = tk.Frame(self.content_frame, bg="black", width=300)
         left_frame.pack(side="left", fill="y", padx=(0, 10))
 
-        # frame droite pour le résumé
         right_frame = tk.Frame(self.content_frame, bg="black")
         right_frame.pack(side="right", fill="both", expand=True)
 
-        # titre "Templates"
         self.create_label(left_frame, "Templates", ("Arial", 14, "bold")).pack(pady=10)
 
-        # liste des templates
         self.template_listbox = tk.Listbox(left_frame, font=("Arial", 12), height=15)
         self.template_listbox.pack(padx=20, pady=10, fill="both", expand=True)
 
-        # ajoute chaque template dans la liste
         for template_name in self.templates_config:
             self.template_listbox.insert(tk.END, template_name)
 
-        # action quand on sélectionne un template
-        self.template_listbox.bind("<<ListboxSelect>>", self.on_template_selected)
+        # Double-clic pour sélectionner et ouvrir directement les paramètres
+        self.template_listbox.bind("<Double-Button-1>", self.on_template_double_clicked)
 
-        # bouton pour confirmer le choix
-        tk.Button(
-            left_frame,
-            text="Choose the template",
-            command=self.confirm_template_selection,
-        ).pack(pady=10)
-
-        # titre du résumé
         self.create_label(
             right_frame, "Summary of experiances plans", ("Arial", 14, "bold")
         ).pack(pady=10)
 
-        # zone texte pour afficher les plans sauvegardés
         self.summary_text = tk.Text(right_frame, font=("Arial", 11), wrap="word")
         self.summary_text.pack(fill="both", expand=True, padx=20, pady=10)
 
-        # met à jour le résumé
         self.refresh_summary()
 
-    def on_template_selected(self, event):
+    def on_template_double_clicked(self, event):
         selection = self.template_listbox.curselection()
         if selection:
-            self.selected_template_f = self.template_listbox.get(selection[0])
-
-    def confirm_template_selection(self):
-        # Verifie qu'un template a ete selectioné
-        if not self.selected_template_f:
-            messagebox.showwarning("Wait", "Please select a template.")
-            return
-        # Confirm le template selectioné
-        self.selected_template = self.selected_template_f
-
-        # Message de confirmation
-        messagebox.showinfo(
-            "Selected template", f"Selected template : {self.selected_template}"
-        )
+            self.selected_template = self.template_listbox.get(selection[0])
+            self.show_parameters_view()
 
     def show_parameters_view(self):
-        # vérifie qu'un template est sélectionné
         if not self.selected_template:
             messagebox.showwarning(
                 "Wait",
-                "First, select a template from the Template tab.",
+                "First, double-click a template from the Template tab.",
             )
             return
 
-        # vide la zone principale
         self.clear_content()
 
-        # charge les valeurs par défaut du template
         defaults = self.load_defaults(self.selected_template)
 
-        # conteneur principal
         container = tk.Frame(self.content_frame, bg="black")
         container.pack(fill="both", expand=True)
 
-        # titre de la page
         self.create_label(
             container, f"Parameters - {self.selected_template}", ("Arial", 16, "bold")
         ).pack(pady=20)
@@ -493,22 +425,17 @@ class SolpocInterface(tk.Tk):
         scroll_frame = tk.Frame(container, bg="black")
         scroll_frame.pack(fill="both", expand=True, padx=20, pady=10)
 
-        # reset des champs
         self.parameter_entries = {}
 
-        # récupère les paramètres du template
         parameters = self.templates_config[self.selected_template]
 
-        # nombre de colonnes par ligne
         cols_per_row = 3
 
-        # champs d'informations générales
         self.meta_entries = {}
 
         meta_frame = tk.Frame(container, bg="black")
         meta_frame.pack(fill="x", padx=20, pady=10)
 
-        # meta_fields = ["Priority", "First name", "Last name", "Date"]
         meta_fields = ["Priority", "First name", "Last name"]
 
         for i, field in enumerate(meta_fields):
@@ -520,7 +447,7 @@ class SolpocInterface(tk.Tk):
                 entry = ttk.Combobox(
                     meta_frame, value=[1, 2, 3], width=18, state="readonly"
                 )
-                entry.current(0)  # valeur par défaut = 1
+                entry.current(0)
             else:
                 entry = tk.Entry(meta_frame, width=20)
 
@@ -528,43 +455,31 @@ class SolpocInterface(tk.Tk):
 
             self.meta_entries[field] = entry
 
-        # crée les champs dynamiquement
         for i, param_name in enumerate(parameters):
             row = i // cols_per_row
             col = (i % cols_per_row) * 2
 
-            # label du paramètre
             self.create_label(scroll_frame, param_name).grid(
                 row=row, column=col, padx=10, pady=8, sticky="w"
             )
 
-            # champ de saisie
             entry = tk.Entry(scroll_frame, width=25)
             entry.grid(row=row, column=col + 1, padx=10, pady=8)
 
-            # insère la valeur par défaut si dispo
             if param_name in defaults:
                 entry.insert(0, defaults[param_name])
 
-            # stocke le champ
             self.parameter_entries[param_name] = entry
 
-            # Rentre la date automatiquement
-            # if field == "Date":
-            # entry.insert(0, datetime.now().strftime("%d/%m/%Y"))
-
-        # frame pour le bouton en bas
         bottom_frame = tk.Frame(container, bg="black")
         bottom_frame.pack(fill="x", pady=20)
 
-        # bouton de validation
         tk.Button(
             bottom_frame, text="Confirm", width=20, command=self.validate_parameters
         ).pack(anchor="center")
 
     def validate_parameters(self):
 
-        # vérification que tous les champs template sont remplis et du bon type
         for param_name, entry in self.parameter_entries.items():
             if param_name.startswith("__"):
                 continue
@@ -582,46 +497,36 @@ class SolpocInterface(tk.Tk):
                 )
                 return
 
-        # récupère la priorité
         priority = int(self.meta_entries["Priority"].get())
 
-        # récupère prénom et nom
         firstname = self.meta_entries.get("First name")
         firstname = firstname.get().strip() if firstname else "inconnu"
 
         lastname = self.meta_entries.get("Last name")
         lastname = lastname.get().strip() if lastname else "inconnu"
 
-        # génère et sauvegarde le JSON
         filepath = self.build_and_save_json(
             self.parameter_entries, priority, firstname, lastname
         )
 
         messagebox.showinfo("Succès", f"Plan enregistré :\n{filepath}")
 
-        # retour à la page principale
         self.show_template_view()
 
     def validate_type(self, param_name, value):
-        # récupère le type attendu du paramètre
         param_type = self.param_type.get(param_name, "text")
 
-        # enlève les espaces au début et à la fin
         value = value.strip()
 
-        # vérifie un champ texte
         if param_type == "text":
             return value != ""
 
-        # vérifie un entier positif
         if param_type == "int":
             return value.isdigit() and int(value) > 0
 
-        # vérifie un entier optionnel ou None
         if param_type == "optional_int":
             return value == "None" or (value.isdigit() and int(value) > 0)
 
-        # vérifie un nombre
         if param_type == "number":
             try:
                 float(value)
@@ -629,7 +534,6 @@ class SolpocInterface(tk.Tk):
             except ValueError:
                 return False
 
-        # vérifie un taux entre 0 et 1
         if param_type == "rate":
             try:
                 number = float(value)
@@ -637,26 +541,20 @@ class SolpocInterface(tk.Tk):
             except ValueError:
                 return False
 
-        # vérifie un intervalle
         if param_type == "range":
             normalized = self.normalize_range(value)
 
-            # si la conversion échoue, la valeur est invalide
             if normalized is None:
                 return False
 
             try:
-                # convertit le texte en tuple Python
                 values = ast.literal_eval(normalized)
 
-                # vérifie que c'est bien un tuple de 2 valeurs
                 if not isinstance(values, tuple) or len(values) != 2:
                     return False
 
-                # récupère les bornes min et max
                 min_v, max_v = values
 
-                # vérifie que les bornes sont numériques et cohérentes
                 return (
                     isinstance(min_v, (int, float))
                     and isinstance(max_v, (int, float))
@@ -665,30 +563,23 @@ class SolpocInterface(tk.Tk):
             except (ValueError, SyntaxError):
                 return False
 
-        # vérifie une liste
         if param_type == "list":
             normalized = self.normalize_list(value)
 
-            # si la conversion échoue, la valeur est invalide
             if normalized is None:
                 return False
 
             try:
-                # convertit le texte en liste Python
                 values = ast.literal_eval(normalized)
 
-                # vérifie que c'est bien une liste
                 return isinstance(values, list)
             except (ValueError, SyntaxError):
                 return False
 
-        # vérifie une longueur d'onde
         if param_type == "wavelength":
-            # accepte np.arange(280, 2505, 5)
             if value.startswith("np.arange(") or value.startswith("sol.Wl_selectif("):
                 return True
 
-            # accepte [400, 800, 5] ou 400, 800, 5
             cleaned = value.strip("[]() ")
             parts = [p.strip() for p in cleaned.split(",") if p.strip()]
             if len(parts) == 3:
@@ -713,56 +604,43 @@ class SolpocInterface(tk.Tk):
             return False
 
     def normalize_range(self, value):
-        # enlève les espaces inutiles
         value = value.strip()
 
-        # si déjà au bon format (tuple), on retourne tel quel
         if value.startswith("(") and value.endswith(")"):
             return value
 
-        # remplace les espaces par des virgules puis découpe
         parts = [p.strip() for p in value.replace(" ", ",").split(",") if p.strip()]
 
-        # si on a exactement 2 valeurs, on crée un tuple
         if len(parts) == 2:
             return f"({parts[0]}, {parts[1]})"
 
-        # sinon la valeur est invalide
         return None
 
     def normalize_list(self, value):
-        # enlève les espaces inutiles
         value = value.strip()
 
-        # si déjà au bon format (liste), on retourne tel quel
         if value.startswith("["):
             return value
 
-        # découpe la chaîne en éléments séparés par des virgules
         parts = [p.strip().strip('"').strip("'") for p in value.split(",") if p.strip()]
 
-        # si des éléments existent, on reconstruit une liste Python valide
         if parts:
             items = ", ".join(f'"{p}"' for p in parts)
             return f"[{items}]"
 
-        # sinon la valeur est invalide
         return None
 
     def parse_value(self, raw: str, json_key: str):
         raw = raw.strip()
 
-        # null si vide ou None
         if raw == "" or raw.lower() in ("none", "null"):
             return None
 
-        # booléens
         if raw.lower() == "true":
             return True
         if raw.lower() == "false":
             return False
 
-        # listes de nombres : "280, 2505, 5" → [280, 2505, 5]
         list_keys = {"Wl", "Th_range", "n_range", "vf_range"}
         if json_key in list_keys:
             cleaned = raw.strip("[]() ")
@@ -775,14 +653,12 @@ class SolpocInterface(tk.Tk):
                     result.append(float(p))
             return result
 
-        # entiers
         if json_key in {"pop_size", "budget", "nb_run", "cpu_used", "nb_layer"}:
             try:
                 return int(float(raw))
             except ValueError:
                 return raw
 
-        # floats
         if json_key in {
             "crossover_rate",
             "f1",
@@ -802,7 +678,6 @@ class SolpocInterface(tk.Tk):
             except ValueError:
                 return raw
 
-        # seed : None ou entier
         if json_key == "seed":
             if raw.lower() in ("none", "null", ""):
                 return None
@@ -811,11 +686,9 @@ class SolpocInterface(tk.Tk):
             except ValueError:
                 return None
 
-        # strings propres sans guillemets
         if json_key in {"mutation_DE", "Comment", "Mode_choose_material"}:
             return raw.strip("\"'")
 
-        # Mat_Stack : liste de strings
         if json_key in {"Mat_Stack", "Mat_Option"}:
             if raw.startswith("["):
                 try:
@@ -824,15 +697,11 @@ class SolpocInterface(tk.Tk):
                         return parsed
                 except Exception:
                     pass
-            # "BK7, TiO2" → ["BK7", "TiO2"]
             return [p.strip().strip("\"'") for p in raw.split(",") if p.strip()]
 
-        # d_Stack_Opt : liste mixte "no, no, 10" → ["no", "no", 10]
         if json_key == "d_Stack_Opt":
             if raw.startswith("["):
                 try:
-                    import ast
-
                     return ast.literal_eval(raw)
                 except Exception:
                     pass
@@ -845,10 +714,7 @@ class SolpocInterface(tk.Tk):
                     result.append(p)
             return result
 
-        # fallback générique
         try:
-            import ast
-
             parsed = ast.literal_eval(raw)
             if isinstance(parsed, tuple):
                 return list(parsed)
@@ -862,7 +728,6 @@ class SolpocInterface(tk.Tk):
         self, parameter_entries: dict, priority: int, firstname: str, lastname: str
     ) -> str:
 
-        # schéma de base avec tous les champs à null
         experiment = {
             "template": self.selected_template,
             "Comment": None,
@@ -915,7 +780,6 @@ class SolpocInterface(tk.Tk):
             "Mode_choose_material": None,
         }
 
-        # correspondance label UI : clé JSON
         ui_label_to_json_key = {
             "Comment": "Comment",
             "Mat_Stack": "Mat_Stack",
@@ -946,9 +810,7 @@ class SolpocInterface(tk.Tk):
             "T_abs (K)": "T_abs",
         }
 
-        # remplissage avec les valeurs saisies par l'utilisateur
         for ui_label, entry_widget in parameter_entries.items():
-            # on ignore les champs internes (__priority__, __firstname__...)
             if ui_label.startswith("__"):
                 continue
 
@@ -956,7 +818,6 @@ class SolpocInterface(tk.Tk):
             raw_value = entry_widget.get().strip()
             experiment[json_key] = self.parse_value(raw_value, json_key)
 
-        # nom de fichier : Template_Prenom_Nom_date_heure.json
         folder = "plans_experiences"
         os.makedirs(folder, exist_ok=True)
 
@@ -967,27 +828,22 @@ class SolpocInterface(tk.Tk):
         filename = f"{template_slug}_{priority}_{firstname_slug}_{lastname_slug}_{timestamp}.json"
         filepath = os.path.join(folder, filename)
 
-        # sauvegarde
         with open(filepath, "w", encoding="utf-8") as f:
             json.dump(experiment, f, indent=4, ensure_ascii=False)
 
         return filepath
 
-
     def refresh_summary(self):
-        # vide la zone de texte
         self.summary_text.delete("1.0", tk.END)
 
         folder = "plans_experiences"
 
-        # dossier inexistant ou vide
         if not os.path.exists(folder):
             self.summary_text.insert(
                 tk.END, "No experimental designs have been saved yet."
             )
             return
 
-        # liste les fichiers json triés par date
         files = sorted(f for f in os.listdir(folder) if f.endswith(".json"))
 
         if not files:
@@ -996,7 +852,6 @@ class SolpocInterface(tk.Tk):
             )
             return
 
-        # clés internes à ne pas afficher
         meta_keys = {
             "template",
             "Comment",
@@ -1024,7 +879,6 @@ class SolpocInterface(tk.Tk):
             "d_Stack",
         }
 
-        # affiche chaque plan
         for i, filename in enumerate(files, start=1):
             filepath = os.path.join(folder, filename)
             with open(filepath, "r", encoding="utf-8") as f:
@@ -1041,7 +895,6 @@ class SolpocInterface(tk.Tk):
             self.summary_text.insert(tk.END, f"  Priority : {priority_from_filename}\n")
             self.summary_text.insert(tk.END, f"\n")
 
-            # paramètres
             for key, value in exp.items():
                 if key in meta_keys or value is None:
                     continue
@@ -1049,7 +902,6 @@ class SolpocInterface(tk.Tk):
 
             self.summary_text.insert(tk.END, f"\n")
 
-        # séparateur final
         self.summary_text.insert(tk.END, "─" * 60 + "\n")
 
 
