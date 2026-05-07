@@ -485,7 +485,8 @@ class SolpocInterface(tk.Tk):
                 anchor="w",
                 command=lambda t=template_name: self.select_template(t),
             )
-            btn.pack(pady=3, fill="x")
+            # Après
+            btn.pack(pady=3, fill="both", expand=True)
 
         # --- Résumé des plans enregistrés ---
         self.create_label(
@@ -602,21 +603,20 @@ class SolpocInterface(tk.Tk):
         bottom_frame = tk.Frame(container, bg="black")
         bottom_frame.pack(fill="x", pady=20)
 
-        # Bouton "Back" : retourne à la page Template sans rien sauvegarder
-        tk.Button(
-            bottom_frame,
-            text="← Back",
-            width=10,
-            command=self.show_template_view,
-        ).pack(side="left", padx=20)
-
-        # Bouton "Confirm" : valide la saisie et enregistre le plan d'expérience
+        #
         tk.Button(
             bottom_frame,
             text="Confirm",
             width=20,
             command=self.validate_parameters,
         ).pack(side="left", padx=10)
+
+        tk.Button(
+            bottom_frame,
+            text="← Back",
+            width=10,
+            command=self.show_template_view,
+        ).pack(side="right", padx=20)
 
     # ------------------------------------------------------------------
     # VALIDATION ET SAUVEGARDE DES PARAMÈTRES
