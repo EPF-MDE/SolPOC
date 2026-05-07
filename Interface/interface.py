@@ -251,7 +251,8 @@ class SolpocInterface(tk.Tk):
 
             # Supprime les lignes commentées
             content = "\n".join(
-                line for line in content.splitlines()
+                line
+                for line in content.splitlines()
                 if not line.strip().startswith("#")
             )
 
@@ -306,7 +307,10 @@ class SolpocInterface(tk.Tk):
                 defaults[param] = self.simplify_default(param, raw)
 
         # Gestion de la seed
-        if "seed" in self.templates_config[self.selected_template] and "seed" not in defaults:
+        if (
+            "seed" in self.templates_config[self.selected_template]
+            and "seed" not in defaults
+        ):
             defaults["seed"] = "None"
 
         return defaults
@@ -963,8 +967,8 @@ class SolpocInterface(tk.Tk):
         template_slug = self.selected_template.replace(" ", "_")
         firstname_slug = firstname.strip().replace(" ", "_")
         lastname_slug = lastname.strip().replace(" ", "_")
-        timestamp = datetime.now().strftime("%Y-%m-%d_%Hh%M")
-        filename = f"{template_slug}_{priority}_{firstname_slug}_{lastname_slug}_{timestamp}.json"
+        timestamp = datetime.now().strftime("%Y-%m-%d_%Hh%Mm%Ss")
+        filename = f"{template_slug}_{timestamp}_{priority}.json"
         filepath = os.path.join(folder, filename)
 
         # sauvegarde
@@ -972,7 +976,6 @@ class SolpocInterface(tk.Tk):
             json.dump(experiment, f, indent=4, ensure_ascii=False)
 
         return filepath
-
 
     def refresh_summary(self):
         # vide la zone de texte
