@@ -198,7 +198,6 @@ def run_problem_solution(args):
 
 # paramètre hors de get_parameters
 
-cpu_used = 4  # Number of CPU used. /!\ be "raisonable", regarding the real number of CPU your computer
 
 # ordre exact des colonnes
 columns = [
@@ -250,8 +249,6 @@ columns = [
     "Mat_Option",
     "coherency_limit",
     "Mode_choose_material",
-    "priority",
-    "not_use",
 ]
 Comment = ""
 
@@ -492,6 +489,14 @@ if __name__ == "__main__":
             nb_run = int(first_min_row["nb_run"])
         else:
             nb_run = 1
+
+        # Lire cpu_used depuis le JSON
+        if first_min_row.get("cpu_used") is not None and not pd.isna(
+            first_min_row.get("cpu_used")
+        ):
+            cpu_used = int(first_min_row["cpu_used"])
+        else:
+            cpu_used = 4  # Valeur par défaut si non spécifié dans le JSON
 
         # Créer un dossier unique pour cette ligne a modifier pour faire en sorte que ensuite les resultat soit mis dedans!
         # dossier global pour tous les resultats

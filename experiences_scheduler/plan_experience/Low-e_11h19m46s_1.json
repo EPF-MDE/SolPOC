@@ -25,7 +25,7 @@
   "vf": null,
   "Th_range": [
     0,
-    300
+    200
   ],
   "Th_Substrate": 1000000,
   "vf_range": [
@@ -41,7 +41,7 @@
   "mutation_DE": "current_to_best",
   "budget": 3000,
   "nb_run": 8,
-  "seed": null,
+  "seed": 42,
   "algo": "DEvol",
   "cost_function": "evaluate_low_e",
   "selection": "selection_max",
@@ -69,5 +69,6 @@
   "evaluate_rate": null,
   "Mat_Option": null,
   "coherency_limit": null,
-  "Mode_choose_material": null
+  "Mode_choose_material": null,
+  "cpu_used": 4
 }

@@ -52,5 +52,6 @@
   "evaluate_rate": null,
   "Mat_Option": null,
   "coherency_limit": null,
-  "Mode_choose_material": null
+  "Mode_choose_material": null,
+  "cpu_used": 4
 }
