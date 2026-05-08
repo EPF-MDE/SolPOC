@@ -10,6 +10,7 @@ import solpoc as sol
 from datetime import datetime
 from multiprocessing import Pool, cpu_count
 import json
+import ast
 
 try:
     import function_R_s_weighted as test
@@ -18,6 +19,85 @@ except ImportError:
         "WARNING: function_R_s_weighted module not found. Falling back to sol module."
     )
     test = sol
+
+
+def get_from_modules(name):
+    try:
+        return getattr(test, name)
+    except (AttributeError, Exception):
+        return getattr(sol, name)
+
+
+def build_params(row):
+    # Champs autorisés pour get_parameters
+    allowed_fields = {
+        "Wl",
+        "Ang",
+        "Sol_Spec",
+        "name_Sol_Spec",
+        "d_Stack",
+        "Mat_Stack",
+        "n_Stack",
+        "k_Stack",
+        "vf",
+        "Th_range",
+        "Th_Substrate",
+        "vf_range",
+        "Lambda_cut_1",
+        "Lambda_cut_2",
+        "pop_size",
+        "crossover_rate",
+        "f1",
+        "f2",
+        "mutation_DE",
+        "budget",
+        "algo",
+        "cost_function",
+        "selection",
+        "n_range",
+        "d_Stack_Opt",
+        "C",
+        "T_air",
+        "T_abs",
+        "Signal_H_eye",
+        "poids_PV",
+        "Signal_PV",
+        "Signal_Th",
+        "Signal_fit",
+        "Signal_fit_2",
+        "precision_AlgoG",
+        "mutation_rate",
+        "mutation_delta",
+        "evaluate_rate",
+        "Mat_Option",
+        "coherency_limit",
+        "Mode_choose_material",
+        "nb_run",
+        "seed",
+        "nb_layer",
+    }
+
+    params = {}
+
+    for key, value in row.items():
+        if key not in allowed_fields:
+            continue
+        # Ignore None
+        if value is None:
+            continue
+        # Ignore NaN
+        if isinstance(value, float) and pd.isna(value):
+            continue
+        params[key] = value
+
+    # Casts spéciaux
+    int_fields = ["nb_run", "seed", "nb_layer"]
+    for field in int_fields:
+        if field in params:
+            params[field] = int(params[field])
+
+    return params
+
 
 file_json = "plan_test.json"  # Fichier JSON contenant les plans d'expérience
 # file_json = "test_unitaire.json"  # Fichier JSON de test unitaire
@@ -132,10 +212,7 @@ def main_for_parameters(
 
 def build_wl(Wl):
     if isinstance(Wl, str):
-        try:
-            return getattr(test, Wl)()
-        except (AttributeError, Exception):
-            return getattr(sol, Wl)()
+        return get_from_modules(Wl)()
     elif isinstance(Wl, list) and len(Wl) == 3:
         start, stop, step = Wl
         return np.arange(start, stop, step)
@@ -312,48 +389,20 @@ if __name__ == "__main__":
         if isinstance(first_min_row["Mat_Stack"], str):
             func_name = first_min_row["Mat_Stack"].split("(")[0]
             args_str = first_min_row["Mat_Stack"].split("(")[1].rstrip(")")
-            args = eval(f"[{args_str}]")
-            try:
-                first_min_row["Mat_Stack"] = getattr(test, func_name)(*args)
-            except (AttributeError, Exception):
-                first_min_row["Mat_Stack"] = getattr(sol, func_name)(*args)
+            args = ast.literal_eval(f"[{args_str}]")
+            first_min_row["Mat_Stack"] = get_from_modules(func_name)(*args)
 
         # Pour selection
         if first_min_row.get("selection") is not None:
-            try:
-                selection = getattr(test, first_min_row["selection"])
-            except (AttributeError, Exception):
-                selection = getattr(sol, first_min_row["selection"])
-            try:
-                first_min_row["selection"] = getattr(test, first_min_row["selection"])
-            except (AttributeError, Exception):
-                first_min_row["selection"] = getattr(sol, first_min_row["selection"])
+            selection = get_from_modules(first_min_row["selection"])
 
         # Pour algo
         if first_min_row.get("algo") is not None:
-            try:
-                algo = getattr(test, first_min_row["algo"])
-            except (AttributeError, Exception):
-                algo = getattr(sol, first_min_row["algo"])
-            try:
-                first_min_row["algo"] = getattr(test, first_min_row["algo"])
-            except (AttributeError, Exception):
-                first_min_row["algo"] = getattr(sol, first_min_row["algo"])
+            algo = get_from_modules(first_min_row["algo"])
 
         # Pour cost_function
         if first_min_row.get("cost_function") is not None:
-            try:
-                cost_function = getattr(test, first_min_row["cost_function"])
-            except (AttributeError, Exception):
-                cost_function = getattr(sol, first_min_row["cost_function"])
-            try:
-                first_min_row["cost_function"] = getattr(
-                    test, first_min_row["cost_function"]
-                )
-            except (AttributeError, Exception):
-                first_min_row["cost_function"] = getattr(
-                    sol, first_min_row["cost_function"]
-                )
+            cost_function = get_from_modules(first_min_row["cost_function"])
 
         # print(f"\nPremière ligne avec priorité minimale apres transformation : \n{first_min_row}")
 
@@ -362,14 +411,10 @@ if __name__ == "__main__":
             args = [
                 a.strip().strip("'\"") for a in first_min_row["open_SolSpec"].split(",")
             ]
-            try:
-                Wl_Sol, first_min_row["Sol_Spec"], first_min_row["name_Sol_Spec"] = (
-                    getattr(test, "open_SolSpec")(*args)
-                )
-            except (AttributeError, Exception):
-                Wl_Sol, first_min_row["Sol_Spec"], first_min_row["name_Sol_Spec"] = (
-                    getattr(sol, "open_SolSpec")(*args)
-                )
+            open_solspec = get_from_modules("open_SolSpec")
+            Wl_Sol, first_min_row["Sol_Spec"], first_min_row["name_Sol_Spec"] = (
+                open_solspec(*args)
+            )
             name_Sol_Spec = first_min_row["name_Sol_Spec"]
 
         if isinstance(first_min_row["open_Spec_Signal"], str):
@@ -379,14 +424,8 @@ if __name__ == "__main__":
             ]
             # convertir en int les arguments qui sont des nombres
             args = [int(a) if a.isdigit() else a for a in args]
-            try:
-                Wl_PV, first_min_row["Signal_PV"], name_PV = getattr(
-                    test, "open_Spec_Signal"
-                )(*args)
-            except (AttributeError, Exception):
-                Wl_PV, first_min_row["Signal_PV"], name_PV = getattr(
-                    sol, "open_Spec_Signal"
-                )(*args)
+            open_signal = get_from_modules("open_Spec_Signal")
+            Wl_PV, first_min_row["Signal_PV"], name_PV = open_signal(*args)
 
         if first_min_row["Mat_Stack"] is not None and first_min_row["Wl"] is not None:
             first_min_row["n_Stack"], first_min_row["k_Stack"] = sol.Made_Stack(
@@ -406,97 +445,29 @@ if __name__ == "__main__":
             )
 
         # mettre a jour les parametres
-        params = {}
+        params = build_params(first_min_row)
 
-        params = {}
-
-        # Champs simples (pas de vérification NaN supplémentaire)
-        simple_fields = [
-            "Wl",
-            "Ang",
-            "Sol_Spec",
-            "name_Sol_Spec",
-            "d_Stack",
-            "Mat_Stack",
-            "n_Stack",
-            "k_Stack",
-            "vf",
-            "Th_range",
-            "Th_Substrate",
-            "vf_range",
-            "Lambda_cut_1",
-            "Lambda_cut_2",
-            "pop_size",
-            "crossover_rate",
-            "f1",
-            "mutation_DE",
-            "budget",
-            "algo",
-            "cost_function",
-            "selection",
-            "n_range",
-            "d_Stack_Opt",
-            "C",
-            "T_air",
-            "T_abs",
-            "Signal_H_eye",
-            "poids_PV",
-            "Signal_PV",
-            "Signal_Th",
-            "Signal_fit",
-            "Signal_fit_2",
-            "precision_AlgoG",
-            "mutation_rate",
-            "mutation_delta",
-            "evaluate_rate",
-            "Mat_Option",
-            "coherency_limit",
-            "Mode_choose_material",
-        ]
-
-        # Champs avec vérification NaN + cast int
-        int_fields = ["nb_run", "seed", "nb_layer"]
-
-        # Champs avec vérification NaN sans cast
-        nan_fields = ["f2"]
-
-        for field in simple_fields:
-            if first_min_row.get(field) is not None:
-                params[field] = first_min_row[field]
-
-        for field in int_fields:
-            if first_min_row.get(field) is not None and not pd.isna(
-                first_min_row.get(field)
-            ):
-                params[field] = int(first_min_row[field])
-
-        for field in nan_fields:
-            if first_min_row.get(field) is not None and not pd.isna(
-                first_min_row.get(field)
-            ):
-                params[field] = first_min_row[field]
+        # Ajouter les fonctions
+        if "algo" in first_min_row and algo is not None:
+            params["algo"] = algo
+        if "cost_function" in first_min_row and cost_function is not None:
+            params["cost_function"] = cost_function
+        if "selection" in first_min_row and selection is not None:
+            params["selection"] = selection
 
         # print(f"nb de layer : {params['nb_layer']}")
         # print(f"n_range : {params['n_range']}")
         # print(params)
         parameters = sol.get_parameters(**params)
 
-        algo = first_min_row["algo"]
-
-        if first_min_row["nb_run"] is not None and not pd.isna(
-            first_min_row.get("nb_run")
-        ):
-            nb_run = int(first_min_row["nb_run"])
-        else:
-            nb_run = 1
+        nb_run = params.get("nb_run", 1)
 
         # Lire cpu_used depuis le JSON
-        if first_min_row.get("cpu_used") is not None and not pd.isna(
-            first_min_row.get("cpu_used")
-        ):
-            cpu_used = int(first_min_row["cpu_used"])
+        cpu_used = first_min_row.get("cpu_used", 4)
+        if cpu_used is not None and not pd.isna(cpu_used):
+            cpu_used = int(cpu_used)
         else:
-            cpu_used = 4  # Valeur par défaut si non spécifié dans le JSON
+            cpu_used = 4
 
         # Créer un dossier unique pour cette ligne a modifier pour faire en sorte que ensuite les resultat soit mis dedans!
         # dossier global pour tous les resultats
