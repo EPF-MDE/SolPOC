@@ -310,6 +310,10 @@ class SolpocInterface(tk.Tk):
             and "seed" not in defaults
         ):
             defaults["seed"] = "None"
+        
+        # cpu_used par défaut à 4
+        if "cpu_used" in self.templates_config[self.selected_template]:
+            defaults["cpu_used"] = "4"
 
         return defaults
 
