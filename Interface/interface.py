@@ -393,12 +393,11 @@ class SolpocInterface(tk.Tk):
             bg="black",
             fg="white",
             width=20,
-            cursor="hand2",
             padx=10,
             pady=5,
         )
         self.nav_label_template.grid(row=0, column=0, padx=5)
-        self.nav_label_template.bind("<Button-1>", lambda e: self.show_template_view())
+        
 
         # Label "Parameters" — cliquable via binding <Button-1>
         self.nav_label_parameters = tk.Label(
@@ -408,14 +407,11 @@ class SolpocInterface(tk.Tk):
             bg="black",
             fg="white",
             width=20,
-            cursor="hand2",
             padx=10,
             pady=5,
         )
         self.nav_label_parameters.grid(row=0, column=1, padx=5)
-        self.nav_label_parameters.bind(
-            "<Button-1>", lambda e: self.show_parameters_view()
-        )
+        
 
     def update_nav_highlight(self, active_page):
         """Met à jour la couleur des labels de navigation selon la page active.
@@ -624,6 +620,7 @@ class SolpocInterface(tk.Tk):
             command=self.finalize_all_plans, 
         ).pack(side="right", padx=20)
 
+        # Button pour Back
         tk.Button(
             bottom_frame,
             text="← Back",
