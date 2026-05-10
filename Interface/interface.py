@@ -575,7 +575,7 @@ class SolpocInterface(tk.Tk):
                 entry = ttk.Combobox(
                     meta_frame, value=[1, 2, 3], width=18, state="readonly"
                 )
-                entry.current(0)  # Valeur par défaut : 1
+                entry.current(1)  # Valeur par défaut : 2
             else:
                 entry = tk.Entry(meta_frame, width=20)
 
