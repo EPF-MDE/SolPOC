@@ -20,6 +20,9 @@ class SolpocInterface(tk.Tk):
         # Template actuellement sélectionné
         self.selected_template = None
 
+        # Stockage temporaire des plans
+        self.temp_plans = []
+
         # Dictionnaire des champs de saisie des paramètres
         self.parameter_entries = {}
 
@@ -603,13 +606,23 @@ class SolpocInterface(tk.Tk):
         bottom_frame = tk.Frame(container, bg="black")
         bottom_frame.pack(fill="x", pady=20)
 
-        #
+        # Bouton pour ajouter le plan actuel à la file
         tk.Button(
             bottom_frame,
             text="Confirm",
             width=20,
             command=self.validate_parameters,
         ).pack(side="left", padx=10)
+
+        # Boutton pour tout sauvegarder et quitter 
+        tk.Button(
+            bottom_frame,
+            text="Finalize & Save All",
+            width=20,
+            bg="#4CAF50",
+            fg="white",
+            command=self.finalize_all_plans, 
+        ).pack(side="right", padx=20)
 
         tk.Button(
             bottom_frame,
@@ -647,23 +660,56 @@ class SolpocInterface(tk.Tk):
 
         # Récupère les métadonnées
         priority = int(self.meta_entries["Priority"].get())
-
         firstname = self.meta_entries.get("First name")
         firstname = firstname.get().strip() if firstname else "inconnu"
-
         lastname = self.meta_entries.get("Last name")
         lastname = lastname.get().strip() if lastname else "inconnu"
 
-        # Génère et sauvegarde le JSON
-        filepath = self.build_and_save_json(
-            self.parameter_entries, priority, firstname, lastname
-        )
+        # Crée un dictionnaire pour stocker les valeurs de ce plan
+        values_selected = {}
+        for label, widget in self.parameter_entries.items():
+            values_selected[label] = widget.get() 
+        
+        # on prepare le paquet complet de ce plan a mettre en attente
+        current_plan = {
+            "values": values_selected,
+            "priority":priority,
+            "firstname":firstname,
+            "lastname":lastname
+        }
 
-        messagebox.showinfo("Succès", f"Plan enregistré :\n{filepath}")
+        # On l'ajoute dans la liste temporaire 
+        self.temp_plans.append(current_plan)
 
-        # Retourne à la page Template après confirmation
+        # Message de confirmation sans quitter la page
+        count = len(self.temp_plans)
+        messagebox.showinfo("Ajouté", f"Le plan {count} a été mis en attente.\nVous pouvez en saisir un autre ou cliquer sur 'Finalize'.")
+
+    def finalize_all_plans(self):
+        """Boucle sur la liste d'attente et appelle la fonction de sauvegarde"""
+        if len(self.temp_plans) == 0:
+            messagebox.showwarning("Empty, no plans was confirmed")
+            return
+            
+        # Parcours chaque plan stocké dans la liste
+        for plan in self.temp_plans:
+            # On appelle la fonction de sauvegarde
+            self.build_and_save_json(
+                plan["values"],
+                plan["priority"],
+                plan["firstname"],
+                plan["lastname"]
+            )
+
+        # Message de succes finale
+        messagebox.showinfo(f"Succes, {len(self.temp_plans)} plans on été sauvegardés avec succès !")
+
+        # On vide la liste d'attente pour la prochainbe fois
+        self.temp_plans = []
+
+        # On retourne a lm'écran d'accueil
         self.show_template_view()
-
+    
     # ------------------------------------------------------------------
     # VALIDATION DU TYPE D'UN CHAMP
     # ------------------------------------------------------------------
@@ -996,12 +1042,14 @@ class SolpocInterface(tk.Tk):
         }
 
         # Remplit le dictionnaire avec les valeurs saisies par l'utilisateur
-        for ui_label, entry_widget in parameter_entries.items():
+        # Boucle sur les valeurs textuelles reçues
+        for ui_label, text_value in parameter_entries.items():
             if ui_label.startswith("__"):
                 continue
+
+            # Cherche la clé json correspondante
             json_key = ui_label_to_json_key.get(ui_label, ui_label)
-            raw_value = entry_widget.get().strip()
-            experiment[json_key] = self.parse_value(raw_value, json_key)
+            experiment[json_key] = self.parse_value(text_value.strip(), json_key)
 
         # Crée le dossier de sauvegarde si nécessaire
         folder = "plans_experiences"
@@ -1011,7 +1059,7 @@ class SolpocInterface(tk.Tk):
         template_slug = self.selected_template.replace(" ", "_")
         firstname_slug = firstname.strip().replace(" ", "_")
         lastname_slug = lastname.strip().replace(" ", "_")
-        timestamp = datetime.now().strftime("%Y-%m-%d_%Hh%M")
+        timestamp = datetime.now().strftime("%Y-%m-%d_%Hh%M_%S_%f")
         filename = f"{template_slug}_{priority}_{firstname_slug}_{lastname_slug}_{timestamp}.json"
         filepath = os.path.join(folder, filename)
 
