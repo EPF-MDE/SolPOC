@@ -287,6 +287,16 @@ class SolpocInterface(tk.Tk):
             # Ignore tout ce qui suit la zone modifiable
             content = content.split("# %% You should stop modifying")[0]
 
+            # Gère les affectations sur plusieurs lignes par exemple :
+            # selection = (
+            #     sol.selection_max
+            # )
+            content = re.sub(
+                r"(\w+)\s*=\s*\(\s*\n\s*(sol\.\w+)\s*\n\s*\)",
+                r"\1 = \2", 
+                content
+            )
+
             # Supprime les lignes commentées pour éviter de lire de fausses valeurs
             content = "\n".join(
                 line
@@ -395,7 +405,10 @@ class SolpocInterface(tk.Tk):
 
         # Reference des fonctions SOLPOC : sol.DEvol, sol.selection_max, etc.
         if param_type == "function_ref":
-            return raw_value.strip()
+            value = raw_value.strip()
+            if value.startswith("sol."):
+                value = value[len("sol."):]
+            return value
         
         # Valeur brute pour tous les autres cas
         return raw_value
