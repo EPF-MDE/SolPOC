@@ -11,6 +11,7 @@ import numpy as np
 import solpoc as sol
 from sympy import content
 
+
 class SolpocInterface(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -197,10 +198,7 @@ class SolpocInterface(tk.Tk):
             "PV Cells": "plan_PV_cells.py",
             "Selective Coating": "plan_Selective_coating.py",
             "Spectral Splitting": "plan_Spectral_splitting.py",
-<<<<<<< HEAD
             "Curve RTA": "template_curve_RTA.py",
-=======
->>>>>>> 5f7f8d980c1d8f0f62407af35b6d41b37cf969ef
         }
         # Correspondance entre le label affiché dans l'UI et la variable dans le fichier template
         self.param_to_var = {
@@ -1121,7 +1119,7 @@ class SolpocInterface(tk.Tk):
             experiment[json_key] = self.parse_value(text_value.strip(), json_key)
 
         # Crée le dossier de sauvegarde si nécessaire
-        folder = "plans_experiences"
+        folder = os.path.join("..", "experiences_scheduler", "plan_experience")
         os.makedirs(folder, exist_ok=True)
 
         # Nom du fichier : Template_priorité_Prénom_Nom_date_heure.json
@@ -1145,7 +1143,7 @@ class SolpocInterface(tk.Tk):
 
         self.summary_text.delete("1.0", tk.END)
 
-        folder = "plans_experiences"
+        folder = os.path.join("..", "experiences_scheduler", "plan_experience")
 
         # Dossier inexistant → message vide
         if not os.path.exists(folder):
