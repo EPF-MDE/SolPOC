@@ -404,11 +404,10 @@ if __name__ == "__main__":
         parameters = sol.get_parameters(**params)
         nb_run = params.get("nb_run", 1)
 
-        # Lire cpu_used depuis le JSON
-        cpu_used = first_min_row.get("cpu_used", 4)
-        if cpu_used is not None and not pd.isna(cpu_used):
-            cpu_used = int(cpu_used)
-        else:
+        # Lire cpu_used depuis le JSON, par défaut 4 si la clé est absente ou non convertible
+        try:
+            cpu_used = int(first_min_row["cpu_used"])
+        except (KeyError, TypeError, ValueError):
             cpu_used = 4
 
         # dossier global pour tous les resultats
@@ -461,7 +460,7 @@ if __name__ == "__main__":
             # Déplacer le plan échoué vers plan_failed avec préfixe
             os.rename(
                 os.path.join("plan_experience", first_min_row["filename"]),
-                os.path.join("plan_failed", f"failed_{first_min_row['filename']}"),
+                os.path.join("plan_failed", first_min_row['filename'])
             )
             continue  # Passer au suivant
 
