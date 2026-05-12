@@ -512,7 +512,7 @@ class SolpocInterface(tk.Tk):
         """Affiche la page de saisie des paramètres pour le template sélectionné.
         Contient :
         - Un titre avec le nom du template
-        - Les champs méta (Priority, First name, Last name)
+        - Priority
         - Les champs dynamiques propres au template
         - Un bouton Back (retour sans sauvegarder) et un bouton Confirm
         """
@@ -555,13 +555,13 @@ class SolpocInterface(tk.Tk):
         # Nombre de colonnes (label + entry) par ligne dans la grille
         cols_per_row = 3
 
-        # --- Champs méta : Priority, First name, Last name ---
+        # Priority
         self.meta_entries = {}
 
         meta_frame = tk.Frame(container, bg="black")
         meta_frame.pack(fill="x", padx=20, pady=10)
 
-        meta_fields = ["Priority", "First name", "Last name"]
+        meta_fields = ["Priority"]
 
         for i, field in enumerate(meta_fields):
             self.create_label(meta_frame, field).grid(
@@ -659,10 +659,6 @@ class SolpocInterface(tk.Tk):
 
         # Récupère les métadonnées
         priority = int(self.meta_entries["Priority"].get())
-        firstname = self.meta_entries.get("First name")
-        firstname = firstname.get().strip() if firstname else "inconnu"
-        lastname = self.meta_entries.get("Last name")
-        lastname = lastname.get().strip() if lastname else "inconnu"
 
         # Crée un dictionnaire pour stocker les valeurs de ce plan
         values_selected = {}
@@ -670,12 +666,7 @@ class SolpocInterface(tk.Tk):
             values_selected[label] = widget.get()
 
         # on prepare le paquet complet de ce plan a mettre en attente
-        current_plan = {
-            "values": values_selected,
-            "priority": priority,
-            "firstname": firstname,
-            "lastname": lastname,
-        }
+        current_plan = {"values": values_selected, "priority": priority}
 
         # On l'ajoute dans la liste temporaire
         self.temp_plans.append(current_plan)
@@ -696,9 +687,7 @@ class SolpocInterface(tk.Tk):
         # Parcours chaque plan stocké dans la liste
         for plan in self.temp_plans:
             # On appelle la fonction de sauvegarde
-            self.build_and_save_json(
-                plan["values"], plan["priority"], plan["firstname"], plan["lastname"]
-            )
+            self.build_and_save_json(plan["values"], plan["priority"])
 
         # Message de succes finale
         messagebox.showinfo(
@@ -952,9 +941,7 @@ class SolpocInterface(tk.Tk):
     # ------------------------------------------------------------------
     # CONSTRUCTION ET SAUVEGARDE DU FICHIER JSON
     # ------------------------------------------------------------------
-    def build_and_save_json(
-        self, parameter_entries: dict, priority: int, firstname: str, lastname: str
-    ) -> str:
+    def build_and_save_json(self, parameter_entries: dict, priority: int) -> str:
         """Construit le dictionnaire du plan d'expérience à partir des saisies,
         puis le sauvegarde dans un fichier JSON horodaté dans plans_experiences/."""
 
