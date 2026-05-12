@@ -7,7 +7,6 @@ import ast
 from datetime import datetime
 
 
-
 class SolpocInterface(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -180,22 +179,21 @@ class SolpocInterface(tk.Tk):
 
         # Correspondance entre le nom du template et son fichier Python
         self.file_map = {
-            "AR": "template_AR.py",
-            "Bragg Mirror": "template_Bragg_mirror.py",
-            "Low-e": "template_low_e.py",
-            "Optimization with Materials": "template_optimization_with_materials.py",
-            "PV Cells": "template_PVcells.py",
-            "Selective Coating": "template_selective_coating.py",
-            "Spectral Splitting": "template_spectral_splitting.py",
+            "AR": "plan_AR.py",
+            "Bragg Mirror": "plan_Bragg_mirror.py",
+            "Low-e": "plan_Low_e.py",
+            "Optimization with Materials": "plan_Optimization_with_materials.py",
+            "PV Cells": "plan_PV_cells.py",
+            "Selective Coating": "plan_Selective_coating.py",
+            "Spectral Splitting": "plan_Spectral_splitting.py",
         }
-
         # Correspondance entre le label affiché dans l'UI et la variable dans le fichier template
         self.param_to_var = {
             "Comment": "Comment",
             "Mat_Stack": "Mat_Stack",
-            "algo":"algo",
-            "selection":"selection",
-            "cost_funtion":"cost_function",
+            "algo": "algo",
+            "selection": "selection",
+            "cost_funtion": "cost_function",
             "Wl (start, stop, step)": "Wl",
             "Th_Substrate (nm)": "Th_Substrate",
             "Th_range (min, max)": "Th_range",
@@ -228,9 +226,9 @@ class SolpocInterface(tk.Tk):
             "Comment": "text",
             "Mat_Stack": "list",
             "Mat_Option": "list",
-            "algo":"function_ref",
-            "selection":"function_ref",
-            "cost_funtion":"function_ref",
+            "algo": "function_ref",
+            "selection": "function_ref",
+            "cost_funtion": "function_ref",
             "Wl (start, stop, step)": "wavelength",
             "Th_Substrate (nm)": "number",
             "Th_range (min, max)": "range",
@@ -275,7 +273,7 @@ class SolpocInterface(tk.Tk):
 
         # Chemin vers le fichier template (dossier Examples/)
         filepath = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "..", "Examples", filename
+            os.path.dirname(os.path.abspath(__file__)), "..", "Plans", filename
         )
 
         if not os.path.exists(filepath):
@@ -292,9 +290,7 @@ class SolpocInterface(tk.Tk):
             #     sol.selection_max
             # )
             content = re.sub(
-                r"(\w+)\s*=\s*\(\s*\n\s*(sol\.\w+)\s*\n\s*\)",
-                r"\1 = \2", 
-                content
+                r"(\w+)\s*=\s*\(\s*\n\s*(sol\.\w+)\s*\n\s*\)", r"\1 = \2", content
             )
 
             # Supprime les lignes commentées pour éviter de lire de fausses valeurs
@@ -407,12 +403,11 @@ class SolpocInterface(tk.Tk):
         if param_type == "function_ref":
             value = raw_value.strip()
             if value.startswith("sol."):
-                value = value[len("sol."):]
+                value = value[len("sol.") :]
             return value
-        
+
         # Valeur brute pour tous les autres cas
         return raw_value
-
 
     # ------------------------------------------------------------------
     # CONSTRUCTION DU HEADER (titre + navigation)
@@ -710,7 +705,11 @@ class SolpocInterface(tk.Tk):
             values_selected[label] = widget.get()
 
         # on prepare le paquet complet de ce plan a mettre en attente
-        current_plan = {"template": self.selected_template, "values": values_selected, "priority": priority}
+        current_plan = {
+            "template": self.selected_template,
+            "values": values_selected,
+            "priority": priority,
+        }
 
         # On l'ajoute dans la liste temporaire
         self.temp_plans.append(current_plan)
@@ -949,7 +948,14 @@ class SolpocInterface(tk.Tk):
                 return None
 
         # Chaînes de texte sans guillemets
-        if json_key in {"mutation_DE", "Comment", "Mode_choose_material", "algo", "cost_function", "selection"}:
+        if json_key in {
+            "mutation_DE",
+            "Comment",
+            "Mode_choose_material",
+            "algo",
+            "cost_function",
+            "selection",
+        }:
             return raw.strip("\"'")
 
         # Listes de matériaux : "BK7, TiO2" → ["BK7", "TiO2"]
