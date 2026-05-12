@@ -663,7 +663,6 @@ class SolpocInterface(tk.Tk):
 
         meta_frame = tk.Frame(container, bg="black")
         meta_frame.pack(fill="x", padx=20, pady=10)
-
         meta_fields = ["Priority"]
 
         for i, field in enumerate(meta_fields):
@@ -694,7 +693,6 @@ class SolpocInterface(tk.Tk):
             )
 
             # Champ de saisie
-            
             if param_name == "algo":
                 entry = ttk.Combobox(
                     scroll_frame,
@@ -719,6 +717,16 @@ class SolpocInterface(tk.Tk):
                     state="readonly",
                 )
             
+            elif self.param_type.get(param_name) == "range":
+                entry = tk.Frame(scroll_frame, bg="black")
+
+                entry_min = tk.Entry(entry, width=10)
+                entry_max = tk.Entry(entry, width=10)
+                entry_min.pack(side="left", padx=(0, 5))
+                entry_max.pack(side="left")
+
+                entry.entries = [entry_min, entry_max]
+
             else : 
                 entry = tk.Entry(scroll_frame, width=25)
             
@@ -726,7 +734,15 @@ class SolpocInterface(tk.Tk):
 
             # Pré-remplit avec la valeur par défaut si disponible
             if param_name in defaults:
-                entry.insert(0, defaults[param_name])
+                default_value = defaults[param_name]
+
+                if self.param_type.get(param_name) == "range":
+                    parts = [p.strip() for p in default_value.split(",")]
+                    if len(parts) == 2:
+                        entry.entries[0].insert(0, parts[0])
+                        entry.entries[1].insert(0, parts[1])
+                    else:
+                        entry.insert(0, default_value)
 
             self.parameter_entries[param_name] = entry
 
