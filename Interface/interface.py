@@ -1009,10 +1009,8 @@ class SolpocInterface(tk.Tk):
 
         # Nom du fichier : Template_priorité_Prénom_Nom_date_heure.json
         template_slug = self.selected_template.replace(" ", "_")
-        firstname_slug = firstname.strip().replace(" ", "_")
-        lastname_slug = lastname.strip().replace(" ", "_")
-        timestamp = datetime.now().strftime("%Y-%m-%d_%Hh%M")
-        filename = f"{template_slug}_{priority}_{firstname_slug}_{lastname_slug}_{timestamp}.json"
+        timestamp = datetime.now().strftime("%Y-%m-%d_%Hh%Mm%Ss")
+        filename = f"{template_slug}_{timestamp}_{priority}.json"
         filepath = os.path.join(folder, filename)
 
         # Sauvegarde en JSON indenté (lisible)
