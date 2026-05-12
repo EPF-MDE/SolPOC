@@ -5,6 +5,11 @@ import re
 import os
 import ast
 from datetime import datetime
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
+import numpy as np
+import solpoc as sol
+from sympy import content
 
 
 class SolpocInterface(tk.Tk):
@@ -175,6 +180,13 @@ class SolpocInterface(tk.Tk):
                 "cpu_used",
                 "seed",
             ],
+            "Curve RTA": [
+                "Mat_Stack",
+                "d_Stack",
+                "vf",
+                "Wl (start, stop, step)",
+                "Ang (°)",
+            ],
         }
 
         # Correspondance entre le nom du template et son fichier Python
@@ -186,6 +198,7 @@ class SolpocInterface(tk.Tk):
             "PV Cells": "plan_PV_cells.py",
             "Selective Coating": "plan_Selective_coating.py",
             "Spectral Splitting": "plan_Spectral_splitting.py",
+            "Curve RTA": "template_curve_RTA.py",
         }
         # Correspondance entre le label affiché dans l'UI et la variable dans le fichier template
         self.param_to_var = {
@@ -219,6 +232,8 @@ class SolpocInterface(tk.Tk):
             "T_abs (K)": "T_abs",
             "lambda_cut_1 (nm)": "lambda_cut_1",
             "lambda_cut_2 (nm)": "lambda_cut_2",
+            "d_Stack": "d_Stack",
+            "vf": "vf",
         }
 
         # Type attendu pour chaque paramètre (utilisé pour la validation des saisies)
@@ -253,6 +268,8 @@ class SolpocInterface(tk.Tk):
             "f2": "number",
             "mutation_DE": "text",
             "Mode_choose_material": "text",
+            "d_Stack": "list",
+            "vf": "list",
         }
 
         # Construction de l'interface
@@ -540,9 +557,13 @@ class SolpocInterface(tk.Tk):
         self.refresh_summary()
 
     def select_template(self, template_name):
-        """Enregistre le template sélectionné et bascule vers la page des paramètres."""
+
         self.selected_template = template_name
-        self.show_parameters_view()
+
+        if template_name == "Curve RTA":
+            self.show_rta_view()
+        else:
+            self.show_parameters_view()
 
     # ------------------------------------------------------------------
     # PAGE PARAMETERS
@@ -1195,6 +1216,184 @@ class SolpocInterface(tk.Tk):
             self.summary_text.insert(tk.END, f"\n")
 
         self.summary_text.insert(tk.END, "─" * 60 + "\n")
+
+    def show_rta_view(self):
+
+        self.clear_content()
+
+        self.update_nav_highlight("parameters")
+
+        container = tk.Frame(self.content_frame, bg="black")
+        container.pack(fill="both", expand=True)
+
+        self.create_label(container, "Curve RTA", ("Arial", 18, "bold")).pack(pady=10)
+
+        # ========================================================
+        # ZONE INPUTS
+        # ========================================================
+
+        input_frame = tk.Frame(container, bg="black")
+        input_frame.pack(side="left", fill="y", padx=20, pady=20)
+
+        self.rta_entries = {}
+
+        fields = [
+            ("Mat_Stack", "BK7, Al2O3, Al, air"),
+            ("d_Stack", "1000000, 50, 200, 50"),
+            ("vf", "0, 0, 0, 0"),
+            ("Wl", "280, 2500, 5"),
+            ("Ang", "0"),
+        ]
+
+        for i, (label, default) in enumerate(fields):
+            tk.Label(
+                input_frame, text=label, bg="black", fg="white", font=("Arial", 11)
+            ).grid(row=i, column=0, sticky="w", pady=8)
+
+            entry = tk.Entry(input_frame, width=30)
+
+            entry.insert(0, default)
+
+            entry.grid(row=i, column=1, pady=8, padx=10)
+
+            self.rta_entries[label] = entry
+
+        # ========================================================
+        # BOUTON PLOT
+        # ========================================================
+
+        tk.Button(
+            input_frame,
+            text="Plot RTA",
+            width=20,
+            bg="#4CAF50",
+            fg="white",
+            command=self.compute_rta_curve,
+        ).grid(row=len(fields) + 1, column=0, columnspan=2, pady=20)
+
+        # ========================================================
+        # FRAME GRAPH
+        # ========================================================
+
+        self.graph_frame = tk.Frame(container, bg="white")
+        self.graph_frame.pack(side="right", fill="both", expand=True, padx=20, pady=20)
+
+    # ============================================================
+    # AJOUTER CETTE FONCTION DANS LA CLASSE
+    # ============================================================
+
+    def compute_rta_curve(self):
+
+        try:
+            # ====================================================
+            # RECUPERATION INPUTS
+            # ====================================================
+
+            mat_stack = [
+                x.strip() for x in self.rta_entries["Mat_Stack"].get().split(",")
+            ]
+
+            d_stack = [
+                float(x.strip()) for x in self.rta_entries["d_Stack"].get().split(",")
+            ]
+
+            vf = [float(x.strip()) for x in self.rta_entries["vf"].get().split(",")]
+
+            wl_values = [
+                float(x.strip()) for x in self.rta_entries["Wl"].get().split(",")
+            ]
+
+            wl_start, wl_stop, wl_step = wl_values
+
+            ang = float(self.rta_entries["Ang"].get())
+
+            # ====================================================
+            # WAVELENGTH
+            # ====================================================
+
+            Wl = np.arange(wl_start, wl_stop, wl_step)
+
+            # ====================================================
+            # MATERIALS
+            # ====================================================
+
+            n_Stack, k_Stack = sol.Made_Stack(mat_stack, Wl)
+
+            n_Stack, k_Stack = sol.Made_Stack_vf(n_Stack, k_Stack, vf)
+
+            # ====================================================
+            # SOLAR SPECTRUM
+            # ====================================================
+
+            Wl_Sol, Sol_Spec, name_Sol_Spec = sol.open_SolSpec(
+                "Materials/SolSpec.txt", "GT"
+            )
+
+            Sol_Spec = np.interp(Wl, Wl_Sol, Sol_Spec)
+
+            # ====================================================
+            # PARAMETERS
+            # ====================================================
+
+            parameters = sol.get_parameters(
+                Wl=Wl,
+                Ang=ang,
+                d_Stack=d_stack,
+                vf=vf,
+                Th_Substrate=d_stack[0],
+                Mat_Stack=mat_stack,
+                Sol_Spec=Sol_Spec,
+                n_Stack=n_Stack,
+                k_Stack=k_Stack,
+                coherency_limit=2000,
+            )
+
+            # ====================================================
+            # CALCUL RTA
+            # ====================================================
+
+            R, T, A = sol.RTA_curve_inco(d_stack, parameters)
+
+            # ====================================================
+            # CLEAR OLD GRAPH
+            # ====================================================
+
+            for widget in self.graph_frame.winfo_children():
+                widget.destroy()
+
+            # ====================================================
+            # FIGURE
+            # ====================================================
+
+            fig = Figure(figsize=(7, 5), dpi=100)
+
+            ax = fig.add_subplot(111)
+
+            ax.plot(Wl, R, label="Reflectance")
+            ax.plot(Wl, T, label="Transmittance")
+            ax.plot(Wl, A, label="Absorptance")
+
+            ax.set_xlabel("Wavelength (nm)")
+            ax.set_ylabel("Value")
+
+            ax.set_ylim(0, 1)
+
+            ax.legend()
+
+            ax.grid(True)
+
+            # ====================================================
+            # TKINTER CANVAS
+            # ====================================================
+
+            canvas = FigureCanvasTkAgg(fig, master=self.graph_frame)
+
+            canvas.draw()
+
+            canvas.get_tk_widget().pack(fill="both", expand=True)
+
+        except Exception as e:
+            messagebox.showerror("RTA Error", str(e))
 
 
 if __name__ == "__main__":
