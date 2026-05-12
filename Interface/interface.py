@@ -1240,8 +1240,7 @@ class SolpocInterface(tk.Tk):
         fields = [
             ("Mat_Stack", "BK7, Al2O3, Al, air"),
             ("d_Stack", "1000000, 50, 200, 50"),
-            ("vf", "0, 0, 0, 0"),
-            ("Wl", "280, 2500, 5"),
+            ("Wl (start, stop, step)", "280, 2500, 5"),
             ("Ang", "0"),
         ]
 
@@ -1271,6 +1270,10 @@ class SolpocInterface(tk.Tk):
             command=self.compute_rta_curve,
         ).grid(row=len(fields) + 1, column=0, columnspan=2, pady=20)
 
+        tk.Button(
+            input_frame, text="← Back", width=15, command=self.show_template_view
+        ).grid(row=len(fields) + 2, column=0, sticky="w", pady=20)
+
         # ========================================================
         # FRAME GRAPH
         # ========================================================
@@ -1297,10 +1300,9 @@ class SolpocInterface(tk.Tk):
                 float(x.strip()) for x in self.rta_entries["d_Stack"].get().split(",")
             ]
 
-            vf = [float(x.strip()) for x in self.rta_entries["vf"].get().split(",")]
-
             wl_values = [
-                float(x.strip()) for x in self.rta_entries["Wl"].get().split(",")
+                float(x.strip())
+                for x in self.rta_entries["Wl (start, stop, step)"].get().split(",")
             ]
 
             wl_start, wl_stop, wl_step = wl_values
@@ -1318,8 +1320,6 @@ class SolpocInterface(tk.Tk):
             # ====================================================
 
             n_Stack, k_Stack = sol.Made_Stack(mat_stack, Wl)
-
-            n_Stack, k_Stack = sol.Made_Stack_vf(n_Stack, k_Stack, vf)
 
             # ====================================================
             # SOLAR SPECTRUM
@@ -1339,7 +1339,7 @@ class SolpocInterface(tk.Tk):
                 Wl=Wl,
                 Ang=ang,
                 d_Stack=d_stack,
-                vf=vf,
+                vf=None,
                 Th_Substrate=d_stack[0],
                 Mat_Stack=mat_stack,
                 Sol_Spec=Sol_Spec,
