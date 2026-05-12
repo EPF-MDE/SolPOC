@@ -33,6 +33,9 @@ class SolpocInterface(tk.Tk):
             "AR": [
                 "Comment",
                 "Mat_Stack",
+                "algo",
+                "selection",
+                "cost_funtion",
                 "Wl (start, stop, step)",
                 "Th_Substrate (nm)",
                 "Th_range (min, max)",
@@ -51,6 +54,9 @@ class SolpocInterface(tk.Tk):
             "Bragg Mirror": [
                 "Comment",
                 "Mat_Stack",
+                "algo",
+                "selection",
+                "cost_funtion",
                 "Wl (start, stop, step)",
                 "Th_Substrate (nm)",
                 "Th_range (min, max)",
@@ -67,6 +73,9 @@ class SolpocInterface(tk.Tk):
             "Low-e": [
                 "Comment",
                 "Mat_Stack",
+                "algo",
+                "selection",
+                "cost_funtion",
                 "Wl (start, stop, step)",
                 "Th_Substrate (nm)",
                 "Th_range (min, max)",
@@ -86,6 +95,9 @@ class SolpocInterface(tk.Tk):
             "Optimization with Materials": [
                 "Mat_Stack",
                 "Mat_Option",
+                "algo",
+                "selection",
+                "cost_funtion",
                 "Th_range (min, max)",
                 "Th_Substrate (nm)",
                 "Wl (start, stop, step)",
@@ -101,6 +113,9 @@ class SolpocInterface(tk.Tk):
             "PV Cells": [
                 "Comment",
                 "Mat_Stack",
+                "algo",
+                "selection",
+                "cost_funtion",
                 "Wl (start, stop, step)",
                 "Th_Substrate (nm)",
                 "Th_range (min, max)",
@@ -118,6 +133,9 @@ class SolpocInterface(tk.Tk):
             "Selective Coating": [
                 "Comment",
                 "Mat_Stack",
+                "algo",
+                "selection",
+                "cost_funtion",
                 "Th_Substrate (nm)",
                 "Th_range (min, max)",
                 "vf_range (min, max)",
@@ -138,6 +156,9 @@ class SolpocInterface(tk.Tk):
             "Spectral Splitting": [
                 "Comment",
                 "Mat_Stack",
+                "algo",
+                "selection",
+                "cost_funtion",
                 "Wl (start, stop, step)",
                 "Th_Substrate (nm)",
                 "Th_range (min, max)",
@@ -172,6 +193,9 @@ class SolpocInterface(tk.Tk):
         self.param_to_var = {
             "Comment": "Comment",
             "Mat_Stack": "Mat_Stack",
+            "algo":"algo",
+            "selection":"selection",
+            "cost_funtion":"cost_function",
             "Wl (start, stop, step)": "Wl",
             "Th_Substrate (nm)": "Th_Substrate",
             "Th_range (min, max)": "Th_range",
@@ -204,6 +228,9 @@ class SolpocInterface(tk.Tk):
             "Comment": "text",
             "Mat_Stack": "list",
             "Mat_Option": "list",
+            "algo":"function_ref",
+            "selection":"function_ref",
+            "cost_funtion":"function_ref",
             "Wl (start, stop, step)": "wavelength",
             "Th_Substrate (nm)": "number",
             "Th_range (min, max)": "range",
@@ -366,8 +393,13 @@ class SolpocInterface(tk.Tk):
             if value.startswith("sol.Wl_selectif(") and value.endswith(")"):
                 return value[len("sol.Wl_selectif(") : -1]
 
+        # Reference des fonctions SOLPOC : sol.DEvol, sol.selection_max, etc.
+        if param_type == "function_ref":
+            return raw_value.strip()
+        
         # Valeur brute pour tous les autres cas
         return raw_value
+
 
     # ------------------------------------------------------------------
     # CONSTRUCTION DU HEADER (titre + navigation)
@@ -784,6 +816,10 @@ class SolpocInterface(tk.Tk):
                     return False
             return False
 
+        # Référence de fonction SOLPOC, ex: sol.DEvol
+        if param_type == "function_ref":
+            return value.startswith("sol.") and len(value.split(".")) == 2
+
     def value_list(self, value):
         """Vérifie qu'une valeur est une liste de nombres (int ou float)."""
         try:
@@ -900,7 +936,7 @@ class SolpocInterface(tk.Tk):
                 return None
 
         # Chaînes de texte sans guillemets
-        if json_key in {"mutation_DE", "Comment", "Mode_choose_material"}:
+        if json_key in {"mutation_DE", "Comment", "Mode_choose_material", "algo", "cost_function", "selection"}:
             return raw.strip("\"'")
 
         # Listes de matériaux : "BK7, TiO2" → ["BK7", "TiO2"]
