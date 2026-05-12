@@ -674,14 +674,14 @@ class SolpocInterface(tk.Tk):
         # Message de confirmation sans quitter la page
         count = len(self.temp_plans)
         messagebox.showinfo(
-            "Ajouté",
-            f"Le plan {count} a été mis en attente.\nVous pouvez en saisir un autre ou cliquer sur 'Finalize'.",
+            "Plan added",
+            f"Plan {count} has been queued.\nYou can add another one or click 'Finalize'.",
         )
 
     def finalize_all_plans(self):
         """Boucle sur la liste d'attente et appelle la fonction de sauvegarde"""
         if len(self.temp_plans) == 0:
-            messagebox.showwarning("Empty, no plans was confirmed")
+            messagebox.showwarning("Warning", "No plans have been confirmed yet.")
             return
 
         # Parcours chaque plan stocké dans la liste
@@ -691,7 +691,8 @@ class SolpocInterface(tk.Tk):
 
         # Message de succes finale
         messagebox.showinfo(
-            f"Succes, {len(self.temp_plans)} plans on été sauvegardés avec succès !"
+            "Finalization Complete",
+            f"Success, {len(self.temp_plans)} plans have been saved successfully!",
         )
 
         # On vide la liste d'attente pour la prochainbe fois
