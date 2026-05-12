@@ -309,7 +309,7 @@ class SolpocInterface(tk.Tk):
             and "seed" not in defaults
         ):
             defaults["seed"] = "None"
-        
+
         # cpu_used par défaut à 4
         if "cpu_used" in self.templates_config[self.selected_template]:
             defaults["cpu_used"] = "4"
@@ -400,7 +400,6 @@ class SolpocInterface(tk.Tk):
             pady=5,
         )
         self.nav_label_template.grid(row=0, column=0, padx=5)
-        
 
         # Label "Parameters" — cliquable via binding <Button-1>
         self.nav_label_parameters = tk.Label(
@@ -414,7 +413,6 @@ class SolpocInterface(tk.Tk):
             pady=5,
         )
         self.nav_label_parameters.grid(row=0, column=1, padx=5)
-        
 
     def update_nav_highlight(self, active_page):
         """Met à jour la couleur des labels de navigation selon la page active.
@@ -513,7 +511,7 @@ class SolpocInterface(tk.Tk):
         """Affiche la page de saisie des paramètres pour le template sélectionné.
         Contient :
         - Un titre avec le nom du template
-        - Les champs méta (Priority, First name, Last name)
+        - Priority
         - Les champs dynamiques propres au template
         - Un bouton Back (retour sans sauvegarder) et un bouton Confirm
         """
@@ -556,13 +554,13 @@ class SolpocInterface(tk.Tk):
         # Nombre de colonnes (label + entry) par ligne dans la grille
         cols_per_row = 3
 
-        # --- Champs méta : Priority, First name, Last name ---
+        # Priority
         self.meta_entries = {}
 
         meta_frame = tk.Frame(container, bg="black")
         meta_frame.pack(fill="x", padx=20, pady=10)
 
-        meta_fields = ["Priority", "First name", "Last name"]
+        meta_fields = ["Priority"]
 
         for i, field in enumerate(meta_fields):
             self.create_label(meta_frame, field).grid(
@@ -605,23 +603,23 @@ class SolpocInterface(tk.Tk):
         bottom_frame = tk.Frame(container, bg="black")
         bottom_frame.pack(fill="x", pady=20)
 
-        # Bouton pour ajouter le plan actuel à la file
-        tk.Button(
-            bottom_frame,
-            text="Confirm",
-            width=20,
-            command=self.validate_parameters,
-        ).pack(side="left", padx=10)
-
-        # Boutton pour tout sauvegarder et quitter 
+        # Boutton pour tout sauvegarder et quitter
         tk.Button(
             bottom_frame,
             text="Finalize & Save All",
             width=20,
             bg="#4CAF50",
             fg="white",
-            command=self.finalize_all_plans, 
+            command=self.finalize_all_plans,
         ).pack(side="right", padx=20)
+
+        # Bouton pour ajouter le plan actuel à la file
+        tk.Button(
+            bottom_frame,
+            text="Confirm",
+            width=20,
+            command=self.validate_parameters,
+        ).pack(side="right", padx=10)
 
         # Button pour Back
         tk.Button(
@@ -629,7 +627,7 @@ class SolpocInterface(tk.Tk):
             text="← Back",
             width=10,
             command=self.show_template_view,
-        ).pack(side="right", padx=20)
+        ).pack(side="left", padx=20)
 
     # ------------------------------------------------------------------
     # VALIDATION ET SAUVEGARDE DES PARAMÈTRES
@@ -660,56 +658,48 @@ class SolpocInterface(tk.Tk):
 
         # Récupère les métadonnées
         priority = int(self.meta_entries["Priority"].get())
-        firstname = self.meta_entries.get("First name")
-        firstname = firstname.get().strip() if firstname else "inconnu"
-        lastname = self.meta_entries.get("Last name")
-        lastname = lastname.get().strip() if lastname else "inconnu"
 
         # Crée un dictionnaire pour stocker les valeurs de ce plan
         values_selected = {}
         for label, widget in self.parameter_entries.items():
-            values_selected[label] = widget.get() 
-        
-        # on prepare le paquet complet de ce plan a mettre en attente
-        current_plan = {
-            "values": values_selected,
-            "priority":priority,
-            "firstname":firstname,
-            "lastname":lastname
-        }
+            values_selected[label] = widget.get()
 
-        # On l'ajoute dans la liste temporaire 
+        # on prepare le paquet complet de ce plan a mettre en attente
+        current_plan = {"values": values_selected, "priority": priority}
+
+        # On l'ajoute dans la liste temporaire
         self.temp_plans.append(current_plan)
 
         # Message de confirmation sans quitter la page
         count = len(self.temp_plans)
-        messagebox.showinfo("Ajouté", f"Le plan {count} a été mis en attente.\nVous pouvez en saisir un autre ou cliquer sur 'Finalize'.")
+        messagebox.showinfo(
+            "Plan added",
+            f"Plan {count} has been queued.\nYou can add another one or click 'Finalize'.",
+        )
 
     def finalize_all_plans(self):
         """Boucle sur la liste d'attente et appelle la fonction de sauvegarde"""
         if len(self.temp_plans) == 0:
-            messagebox.showwarning("Empty, no plans was confirmed")
+            messagebox.showwarning("Warning", "No plans have been confirmed yet.")
             return
-            
+
         # Parcours chaque plan stocké dans la liste
         for plan in self.temp_plans:
             # On appelle la fonction de sauvegarde
-            self.build_and_save_json(
-                plan["values"],
-                plan["priority"],
-                plan["firstname"],
-                plan["lastname"]
-            )
+            self.build_and_save_json(plan["values"], plan["priority"])
 
         # Message de succes finale
-        messagebox.showinfo(f"Succes, {len(self.temp_plans)} plans on été sauvegardés avec succès !")
+        messagebox.showinfo(
+            "Finalization Complete",
+            f"Success, {len(self.temp_plans)} plans have been saved successfully!",
+        )
 
         # On vide la liste d'attente pour la prochainbe fois
         self.temp_plans = []
 
         # On retourne a lm'écran d'accueil
         self.show_template_view()
-    
+
     # ------------------------------------------------------------------
     # VALIDATION DU TYPE D'UN CHAMP
     # ------------------------------------------------------------------
@@ -951,9 +941,7 @@ class SolpocInterface(tk.Tk):
     # ------------------------------------------------------------------
     # CONSTRUCTION ET SAUVEGARDE DU FICHIER JSON
     # ------------------------------------------------------------------
-    def build_and_save_json(
-        self, parameter_entries: dict, priority: int, firstname: str, lastname: str
-    ) -> str:
+    def build_and_save_json(self, parameter_entries: dict, priority: int) -> str:
         """Construit le dictionnaire du plan d'expérience à partir des saisies,
         puis le sauvegarde dans un fichier JSON horodaté dans plans_experiences/."""
 
@@ -1057,10 +1045,8 @@ class SolpocInterface(tk.Tk):
 
         # Nom du fichier : Template_priorité_Prénom_Nom_date_heure.json
         template_slug = self.selected_template.replace(" ", "_")
-        firstname_slug = firstname.strip().replace(" ", "_")
-        lastname_slug = lastname.strip().replace(" ", "_")
-        timestamp = datetime.now().strftime("%Y-%m-%d_%Hh%M_%S_%f")
-        filename = f"{template_slug}_{priority}_{firstname_slug}_{lastname_slug}_{timestamp}.json"
+        timestamp = datetime.now().strftime("%Y-%m-%d_%Hh%Mm%Ss")
+        filename = f"{template_slug}_{timestamp}_{priority}.json"
         filepath = os.path.join(folder, filename)
 
         # Sauvegarde en JSON indenté (lisible)
