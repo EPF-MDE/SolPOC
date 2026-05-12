@@ -1,4 +1,3 @@
-import pandas as pd
 import numpy as np
 import matplotlib
 
@@ -8,7 +7,7 @@ import time
 import os
 import solpoc as sol
 from datetime import datetime
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool
 import json
 import ast
 
@@ -91,7 +90,7 @@ def build_params(row):
         if value is None:
             continue
         # Ignore NaN
-        if isinstance(value, float) and pd.isna(value):
+        if isinstance(value, (float, np.floating)) and np.isnan(value):
             continue
         params[key] = value
 
@@ -264,13 +263,16 @@ if __name__ == "__main__":
     os.makedirs("plan_executer", exist_ok=True)
 
     # ── POINT 1 : charger le cache des hashes au démarrage ──────────────────
-    hashes_db = load_hashes_db()
-    print(f"Cache chargé : {len(hashes_db)} experience(s) déjà exécutée(s).")
-    print("\n=== Voici les expériences déjà exécutées ===")
+    hashes_db = load_hashes_db() or {}
+    """
+    if hashes_db:
+        print(f"Cache chargé : {len(hashes_db)} experience(s) déjà exécutée(s).")
+        print("\n=== Voici les expériences déjà exécutées ===")
 
-    for plan_hash, filename in hashes_db.items():
-        print(f"• {filename}")
-        print(f"  hash : {plan_hash}")
+        for plan_hash, filename in hashes_db.items():
+            print(f"• {filename}")
+            print(f"  hash : {plan_hash}")
+            """
     # ────────────────────────────────────────────────────────────────────────
 
     plan_files = [f for f in os.listdir("plan_experience") if f.endswith(".json")]
@@ -460,7 +462,7 @@ if __name__ == "__main__":
             # Déplacer le plan échoué vers plan_failed avec préfixe
             os.rename(
                 os.path.join("plan_experience", first_min_row["filename"]),
-                os.path.join("plan_failed", first_min_row['filename'])
+                os.path.join("plan_failed", first_min_row["filename"]),
             )
             continue  # Passer au suivant
 
