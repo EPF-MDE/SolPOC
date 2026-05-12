@@ -6,7 +6,6 @@ import os
 import ast
 from datetime import datetime
 
-from sympy import content
 
 
 class SolpocInterface(tk.Tk):
