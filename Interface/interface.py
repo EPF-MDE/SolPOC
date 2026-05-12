@@ -665,7 +665,7 @@ class SolpocInterface(tk.Tk):
             values_selected[label] = widget.get()
 
         # on prepare le paquet complet de ce plan a mettre en attente
-        current_plan = {"values": values_selected, "priority": priority}
+        current_plan = {"template": self.selected_template, "values": values_selected, "priority": priority}
 
         # On l'ajoute dans la liste temporaire
         self.temp_plans.append(current_plan)
@@ -685,7 +685,10 @@ class SolpocInterface(tk.Tk):
 
         # Parcours chaque plan stocké dans la liste
         for plan in self.temp_plans:
-            # On appelle la fonction de sauvegarde
+            # remet le template associé au plan courant
+            self.selected_template = plan["template"]
+
+            # sauvegarde le plan courant
             self.build_and_save_json(plan["values"], plan["priority"])
 
         # Message de succes finale
@@ -1045,7 +1048,7 @@ class SolpocInterface(tk.Tk):
 
         # Nom du fichier : Template_priorité_Prénom_Nom_date_heure.json
         template_slug = self.selected_template.replace(" ", "_")
-        timestamp = datetime.now().strftime("%Y-%m-%d_%Hh%Mm%Ss")
+        timestamp = datetime.now().strftime("%Y-%m-%d_%Hh%Mm%Ss_%f")
         filename = f"{template_slug}_{timestamp}_{priority}.json"
         filepath = os.path.join(folder, filename)
 
@@ -1117,8 +1120,7 @@ class SolpocInterface(tk.Tk):
                 exp = json.load(f)
 
             # La priorité est le 2e segment du nom de fichier (après le template)
-            parts = filename.split("_")
-            priority_from_filename = parts[1] if len(parts) > 1 else "?"
+            priority_from_filename = filename.replace(".json", "").split("_")[-1]
 
             self.summary_text.insert(tk.END, "─" * 60 + "\n")
             self.summary_text.insert(
