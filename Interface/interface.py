@@ -692,6 +692,9 @@ class SolpocInterface(tk.Tk):
                 row=row, column=col, padx=10, pady=8, sticky="w"
             )
 
+            # Type du paramètre
+            param_type = self.param_type.get(param_name, "text")
+
             # Champ de saisie
             if param_name == "algo":
                 entry = ttk.Combobox(
@@ -716,8 +719,21 @@ class SolpocInterface(tk.Tk):
                     width=22,
                     state="readonly",
                 )
-            
-            elif self.param_type.get(param_name) == "range":
+
+            elif param_type == "wavelength":
+                entry = tk.Frame(scroll_frame, bg="black")
+
+                entry_start = tk.Entry(entry, width=8)
+                entry_stop = tk.Entry(entry, width=8)
+                entry_step = tk.Entry(entry, width=8)
+
+                entry_start.pack(side="left", padx=(0, 5))
+                entry_stop.pack(side="left", padx=(0, 5))
+                entry_step.pack(side="left")
+
+                entry.entries = [entry_start, entry_stop, entry_step]
+
+            elif param_type == "range":
                 entry = tk.Frame(scroll_frame, bg="black")
 
                 entry_min = tk.Entry(entry, width=10)
@@ -735,14 +751,22 @@ class SolpocInterface(tk.Tk):
             # Pré-remplit avec la valeur par défaut si disponible
             if param_name in defaults:
                 default_value = defaults[param_name]
+                # wavelength
+                if param_type == "wavelength":
+                    parts = [p.strip() for p in default_value.split(",")]
+                    if len(parts) == 3:
+                        entry.entries[0].insert(0, parts[0])
+                        entry.entries[1].insert(0, parts[1])
+                        entry.entries[2].insert(0, parts[2])
 
-                if self.param_type.get(param_name) == "range":
+                # range
+                elif param_type == "range":
                     parts = [p.strip() for p in default_value.split(",")]
                     if len(parts) == 2:
                         entry.entries[0].insert(0, parts[0])
                         entry.entries[1].insert(0, parts[1])
-                    else:
-                        entry.insert(0, default_value)
+                else:
+                    entry.insert(0, default_value)
 
             self.parameter_entries[param_name] = entry
 
@@ -787,8 +811,17 @@ class SolpocInterface(tk.Tk):
         for param_name, entry in self.parameter_entries.items():
             if param_name.startswith("__"):
                 continue
+            if self.param_type.get(param_name) == "wavelength":
+                value = (
+                    f"{entry.entries[0].get().strip()}, "
+                    f"{entry.entries[1].get().strip()}, "
+                    f"{entry.entries[2].get().strip()}"
+                )
 
-            value = entry.get().strip()
+            elif self.param_type.get(param_name) == "range":
+                value = f"{entry.entries[0].get().strip()}, {entry.entries[1].get().strip()}"
+            else:
+                value = entry.get().strip()
 
             # Champ vide
             if not value:
@@ -809,7 +842,17 @@ class SolpocInterface(tk.Tk):
         # Crée un dictionnaire pour stocker les valeurs de ce plan
         values_selected = {}
         for label, widget in self.parameter_entries.items():
-            values_selected[label] = widget.get()
+            if self.param_type.get(label) == "wavelength":
+                values_selected[label] = (
+                    f"{widget.entries[0].get().strip()}, "
+                    f"{widget.entries[1].get().strip()}, "
+                    f"{widget.entries[2].get().strip()}"
+                )
+
+            elif self.param_type.get(label) == "range":
+                values_selected[label] = f"{widget.entries[0].get().strip()}, {widget.entries[1].get().strip()}"
+            else:
+                values_selected[label] = widget.get()
 
         # on prepare le paquet complet de ce plan a mettre en attente
         current_plan = {
@@ -827,6 +870,7 @@ class SolpocInterface(tk.Tk):
             "Plan added",
             f"Plan {count} has been queued.\nYou can add another one or click 'Finalize'.",
         )
+
 
     def finalize_all_plans(self):
         """Boucle sur la liste d'attente et appelle la fonction de sauvegarde"""
