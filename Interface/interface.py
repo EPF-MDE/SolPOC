@@ -9,7 +9,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import numpy as np
 import solpoc as sol
-from sympy import content
+
 
 
 class SolpocInterface(tk.Tk):
@@ -39,7 +39,7 @@ class SolpocInterface(tk.Tk):
                 "Mat_Stack",
                 "algo",
                 "selection",
-                "cost_funtion",
+                "cost_function",
                 "Wl (start, stop, step)",
                 "Th_Substrate (nm)",
                 "Th_range (min, max)",
@@ -60,7 +60,7 @@ class SolpocInterface(tk.Tk):
                 "Mat_Stack",
                 "algo",
                 "selection",
-                "cost_funtion",
+                "cost_function",
                 "Wl (start, stop, step)",
                 "Th_Substrate (nm)",
                 "Th_range (min, max)",
@@ -79,7 +79,7 @@ class SolpocInterface(tk.Tk):
                 "Mat_Stack",
                 "algo",
                 "selection",
-                "cost_funtion",
+                "cost_function",
                 "Wl (start, stop, step)",
                 "Th_Substrate (nm)",
                 "Th_range (min, max)",
@@ -101,7 +101,7 @@ class SolpocInterface(tk.Tk):
                 "Mat_Option",
                 "algo",
                 "selection",
-                "cost_funtion",
+                "cost_function",
                 "Th_range (min, max)",
                 "Th_Substrate (nm)",
                 "Wl (start, stop, step)",
@@ -119,7 +119,7 @@ class SolpocInterface(tk.Tk):
                 "Mat_Stack",
                 "algo",
                 "selection",
-                "cost_funtion",
+                "cost_function",
                 "Wl (start, stop, step)",
                 "Th_Substrate (nm)",
                 "Th_range (min, max)",
@@ -139,7 +139,7 @@ class SolpocInterface(tk.Tk):
                 "Mat_Stack",
                 "algo",
                 "selection",
-                "cost_funtion",
+                "cost_function",
                 "Th_Substrate (nm)",
                 "Th_range (min, max)",
                 "vf_range (min, max)",
@@ -162,7 +162,7 @@ class SolpocInterface(tk.Tk):
                 "Mat_Stack",
                 "algo",
                 "selection",
-                "cost_funtion",
+                "cost_function",
                 "Wl (start, stop, step)",
                 "Th_Substrate (nm)",
                 "Th_range (min, max)",
@@ -206,7 +206,7 @@ class SolpocInterface(tk.Tk):
             "Mat_Stack": "Mat_Stack",
             "algo": "algo",
             "selection": "selection",
-            "cost_funtion": "cost_function",
+            "cost_function": "cost_function",
             "Wl (start, stop, step)": "Wl",
             "Th_Substrate (nm)": "Th_Substrate",
             "Th_range (min, max)": "Th_range",
@@ -243,7 +243,7 @@ class SolpocInterface(tk.Tk):
             "Mat_Option": "list",
             "algo": "function_ref",
             "selection": "function_ref",
-            "cost_funtion": "function_ref",
+            "cost_function": "function_ref",
             "Wl (start, stop, step)": "wavelength",
             "Th_Substrate (nm)": "number",
             "Th_range (min, max)": "range",
@@ -271,6 +271,49 @@ class SolpocInterface(tk.Tk):
             "d_Stack": "list",
             "vf": "list",
         }
+
+        # Fonctions pour algo
+        self.algo_options = [
+            "DEvol",
+            "DEvol_Video",
+            "optimize_ga",
+            "optimize_strangle",
+            "PSO",
+            "simulated_annealing",
+            "One_plus_One_ES",
+        ]
+
+        # Fonctions pour cost_function
+        self.cost_function_options = [
+            "evaluate_example",
+            "evaluate_R",
+            "evaluate_T",
+            "evaluate_R_s",
+            "evaluate_T_s",
+            "evaluate_A_s",
+            "evaluate_R_Brg",
+            "evaluate_T_pv",
+            "evaluate_A_pv",
+            "evaluate_T_vis",
+            "evaluate_low_e",
+            "evaluate_rh",
+            "evaluate_RTR",
+            "evaluate_netW_PV_CSP",
+            "evaluate_R_s_AOI",
+            "evaluate_TRT",
+            "evaluate_RTA_s",
+            "evaluate_EBB",
+            "evaluate_fit_R",
+            "evaluate_fit_T",
+            "evaluate_fit_T2face",
+            "evaluate_fit_RT",
+        ]
+
+        # Fonctions pour selection
+        self.selection_options = [
+            "selection_max",
+            "selection_min"
+        ]
 
         # Construction de l'interface
         self.create_header()
@@ -651,7 +694,34 @@ class SolpocInterface(tk.Tk):
             )
 
             # Champ de saisie
-            entry = tk.Entry(scroll_frame, width=25)
+            
+            if param_name == "algo":
+                entry = ttk.Combobox(
+                    scroll_frame,
+                    values=self.algo_options,
+                    width=22,
+                    state="readonly",
+                )
+
+            elif param_name == "cost_function":
+                entry = ttk.Combobox(
+                    scroll_frame,
+                    values=self.cost_function_options,
+                    width=22,
+                    state="readonly",
+                )
+            
+            elif param_name == "selection":
+                entry = ttk.Combobox(
+                    scroll_frame,
+                    values=self.selection_options,
+                    width=22,
+                    state="readonly",
+                )
+            
+            else : 
+                entry = tk.Entry(scroll_frame, width=25)
+            
             entry.grid(row=row, column=col + 1, padx=10, pady=8)
 
             # Pré-remplit avec la valeur par défaut si disponible
@@ -849,9 +919,11 @@ class SolpocInterface(tk.Tk):
                     return False
             return False
 
-        # Référence de fonction SOLPOC, ex: sol.DEvol
+        # Référence de fonction SOLPOC choisie dans une liste déroulante
         if param_type == "function_ref":
-            return value.startswith("sol.") and len(value.split(".")) == 2
+            return value != ""
+        
+
 
     def value_list(self, value):
         """Vérifie qu'une valeur est une liste de nombres (int ou float)."""
