@@ -604,14 +604,6 @@ class SolpocInterface(tk.Tk):
         bottom_frame = tk.Frame(container, bg="black")
         bottom_frame.pack(fill="x", pady=20)
 
-        # Bouton pour ajouter le plan actuel à la file
-        tk.Button(
-            bottom_frame,
-            text="Confirm",
-            width=20,
-            command=self.validate_parameters,
-        ).pack(side="left", padx=10)
-
         # Boutton pour tout sauvegarder et quitter
         tk.Button(
             bottom_frame,
@@ -622,13 +614,21 @@ class SolpocInterface(tk.Tk):
             command=self.finalize_all_plans,
         ).pack(side="right", padx=20)
 
+        # Bouton pour ajouter le plan actuel à la file
+        tk.Button(
+            bottom_frame,
+            text="Confirm",
+            width=20,
+            command=self.validate_parameters,
+        ).pack(side="right", padx=10)
+
         # Button pour Back
         tk.Button(
             bottom_frame,
             text="← Back",
             width=10,
             command=self.show_template_view,
-        ).pack(side="right", padx=20)
+        ).pack(side="left", padx=20)
 
     # ------------------------------------------------------------------
     # VALIDATION ET SAUVEGARDE DES PARAMÈTRES
