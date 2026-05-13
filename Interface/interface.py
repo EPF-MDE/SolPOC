@@ -11,7 +11,6 @@ import numpy as np
 import solpoc as sol
 
 
-
 class SolpocInterface(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -275,7 +274,6 @@ class SolpocInterface(tk.Tk):
         # Fonctions pour algo
         self.algo_options = [
             "DEvol",
-            "DEvol_Video",
             "optimize_ga",
             "optimize_strangle",
             "PSO",
@@ -310,10 +308,7 @@ class SolpocInterface(tk.Tk):
         ]
 
         # Fonctions pour selection
-        self.selection_options = [
-            "selection_max",
-            "selection_min"
-        ]
+        self.selection_options = ["selection_max", "selection_min"]
 
         # Construction de l'interface
         self.create_header()
@@ -711,7 +706,7 @@ class SolpocInterface(tk.Tk):
                     width=22,
                     state="readonly",
                 )
-            
+
             elif param_name == "selection":
                 entry = ttk.Combobox(
                     scroll_frame,
@@ -743,9 +738,9 @@ class SolpocInterface(tk.Tk):
 
                 entry.entries = [entry_min, entry_max]
 
-            else : 
+            else:
                 entry = tk.Entry(scroll_frame, width=25)
-            
+
             entry.grid(row=row, column=col + 1, padx=10, pady=8)
 
             # Pré-remplit avec la valeur par défaut si disponible
@@ -850,7 +845,9 @@ class SolpocInterface(tk.Tk):
                 )
 
             elif self.param_type.get(label) == "range":
-                values_selected[label] = f"{widget.entries[0].get().strip()}, {widget.entries[1].get().strip()}"
+                values_selected[label] = (
+                    f"{widget.entries[0].get().strip()}, {widget.entries[1].get().strip()}"
+                )
             else:
                 values_selected[label] = widget.get()
 
@@ -870,7 +867,6 @@ class SolpocInterface(tk.Tk):
             "Plan added",
             f"Plan {count} has been queued.\nYou can add another one or click 'Finalize'.",
         )
-
 
     def finalize_all_plans(self):
         """Boucle sur la liste d'attente et appelle la fonction de sauvegarde"""
@@ -982,8 +978,6 @@ class SolpocInterface(tk.Tk):
         # Référence de fonction SOLPOC choisie dans une liste déroulante
         if param_type == "function_ref":
             return value != ""
-        
-
 
     def value_list(self, value):
         """Vérifie qu'une valeur est une liste de nombres (int ou float)."""
