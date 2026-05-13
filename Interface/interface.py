@@ -761,7 +761,10 @@ class SolpocInterface(tk.Tk):
                         entry.entries[0].insert(0, parts[0])
                         entry.entries[1].insert(0, parts[1])
                 else:
-                    entry.insert(0, default_value)
+                    if isinstance(entry, ttk.Combobox):
+                        entry.set(default_value)
+                    else:
+                        entry.insert(0, default_value)
 
             self.parameter_entries[param_name] = entry
 
