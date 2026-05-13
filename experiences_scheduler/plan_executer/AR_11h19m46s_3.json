@@ -33,7 +33,7 @@
   "mutation_DE": "rand_1",
   "budget": 500,
   "nb_run": 4,
-  "seed": null,
+  "seed": 42,
   "algo": "DEvol",
   "cost_function": "evaluate_T_s",
   "selection": "selection_max",

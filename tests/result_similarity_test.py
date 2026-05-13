@@ -1,63 +1,36 @@
-import json
 import hashlib
 import os
 
 
-def hash_plan(plan_dict):
+def hash_fichiers(chemin):
+    """Retourne un dict {chemin_relatif: hash} pour chaque fichier"""
+    resultats = {}
+    for root, dirs, files in os.walk(chemin):
+        dirs.sort()
+        for fichier in sorted(files):
+            chemin_fichier = os.path.join(root, fichier)
+            chemin_relatif = os.path.relpath(chemin_fichier, chemin)
 
-    ignored_keys = {
-        "filename",
-        "priority",
-    }
-
-    cleaned = {
-        k: v
-        for k, v in plan_dict.items()
-        if k not in ignored_keys
-    }
-
-    json_string = json.dumps(
-        cleaned,
-        sort_keys=True,
-        default=str,
-    )
-
-    return hashlib.md5(json_string.encode()).hexdigest()
+            hasher = hashlib.md5()
+            with open(chemin_fichier, "rb") as f:
+                while chunk := f.read(8192):
+                    hasher.update(chunk)
+            resultats[chemin_relatif] = hasher.hexdigest()
+    return resultats
 
 
-#Cette partie etait pour tester la fonction de hachage, elle n'est plus nécessaire pour le projet final
+# Comparaison détaillée
+h1 = hash_fichiers("2026-05-13-10h41")
+h2 = hash_fichiers("AR_10h41m11s_3")
+# h2 = hash_fichiers("/chemin/dossier_B")
 
-
-# Charger deux json
-with open("json_file1.json", "r", encoding="utf-8") as f:
-    plan1 = json.load(f)
-
-with open("json_file2.json", "r", encoding="utf-8") as f:
-    plan2 = json.load(f)
-
-hash1 = hash_plan(plan1)
-hash2 = hash_plan(plan2)
-
-print("HASH 1 :", hash1)
-print("HASH 2 :", hash2)
-
-print()
-
-if hash1 == hash2:
-    print("✅ Plans identiques")
-else:
-    print("❌ Plans différents")
-
-    keys = set(plan1.keys()) | set(plan2.keys())
-
-    print("\n=== DIFFERENCES ===")
-
-    for k in sorted(keys):
-
-        v1 = plan1.get(k)
-        v2 = plan2.get(k)
-
-        if v1 != v2:
-            print(f"\nKEY : {k}")
-            print("PLAN 1 :", v1)
-            print("PLAN 2 :", v2)
+tous_les_fichiers = set(h1) | set(h2)
+for f in sorted(tous_les_fichiers):
+    if h1[f] == h2[f]:
+        print(f"✅ Identique : {f}")
+    if f not in h1:
+        print(f"➕ Seulement dans B : {f}")
+    elif f not in h2:
+        print(f"➖ Seulement dans A : {f}")
+    elif h1[f] != h2[f]:
+        print(f"✏️  Modifié : {f}")
