@@ -159,7 +159,6 @@ class TestJsonValidation:
         if os.path.isdir(folder) and not os.listdir(folder):
             os.rmdir(folder)
 
-# Pour résumé, ici le test verifie 3 choses : 
 
 
 
