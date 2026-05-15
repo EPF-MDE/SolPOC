@@ -32,7 +32,17 @@ def hash_plan(plan_dict: dict) -> str:
 # Gestion du cache hashes.json
 # ---------------------------------------------------------------------------
 
-_HASHES_FILE = os.path.join("plan_executer", "hashes.json")
+# _HASHES_FILE = os.path.join("plan_executer", "hashes.json")
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+_HASHES_FILE = os.path.join(
+    BASE_DIR,
+    "..",
+    "experiences_scheduler",
+    "plan_executer",
+    "hashes.json",
+)
 
 
 def load_hashes_db() -> dict:
@@ -57,7 +67,8 @@ def save_hashes_db(hashes_db: dict) -> None:
     Args:
         hashes_db: Dictionnaire { hash: filename } à persister.
     """
-    os.makedirs("plan_executer", exist_ok=True)
+
+    os.makedirs(os.path.dirname(_HASHES_FILE), exist_ok=True)
 
     with open(_HASHES_FILE, "w", encoding="utf-8") as f:
         json.dump(hashes_db, f, indent=2, ensure_ascii=False)

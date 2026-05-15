@@ -6,10 +6,16 @@ import matplotlib.pyplot as plt
 import time
 import os
 import solpoc as sol
+
+
 from datetime import datetime
 from multiprocessing import Pool
 import json
 import ast
+import sys
+
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from tests.hachage_test import (
     hash_plan,
@@ -258,9 +264,16 @@ if __name__ == "__main__":
     running = True
     launch_time_global = datetime.now().strftime("%Y-%m-%d_%Hh%Mm%Ss")
 
-    os.makedirs("plan_experience", exist_ok=True)
-    os.makedirs("plan_failed", exist_ok=True)
-    os.makedirs("plan_executer", exist_ok=True)
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    PLAN_EXPERIENCE_DIR = os.path.join(BASE_DIR, "plan_experience")
+    PLAN_EXECUTER_DIR = os.path.join(BASE_DIR, "plan_executer")
+    PLAN_FAILED_DIR = os.path.join(BASE_DIR, "plan_failed")
+    RUNS_DIR = os.path.join(BASE_DIR, "runs")
+
+    os.makedirs(PLAN_EXPERIENCE_DIR, exist_ok=True)
+    os.makedirs(PLAN_FAILED_DIR, exist_ok=True)
+    os.makedirs(PLAN_EXECUTER_DIR, exist_ok=True)
+    os.makedirs(RUNS_DIR, exist_ok=True)
 
     # ── POINT 1 : charger le cache des hashes au démarrage ──────────────────
     hashes_db = load_hashes_db() or {}
@@ -275,10 +288,10 @@ if __name__ == "__main__":
             """
     # ────────────────────────────────────────────────────────────────────────
 
-    plan_files = [f for f in os.listdir("plan_experience") if f.endswith(".json")]
+    plan_files = [f for f in os.listdir(PLAN_EXPERIENCE_DIR) if f.endswith(".json")]
     plans = []
     for f in plan_files:
-        with open(os.path.join("plan_experience", f), "r", encoding="utf-8") as file:
+        with open(os.path.join(PLAN_EXPERIENCE_DIR, f), "r", encoding="utf-8") as file:
             plan = json.load(file)
             plan["filename"] = f
             filename_without_ext = f.replace(".json", "")
@@ -316,8 +329,8 @@ if __name__ == "__main__":
             )
             # Déplacer quand même vers plan_executer pour ne pas le relancer
             os.rename(
-                os.path.join("plan_experience", first_min_row["filename"]),
-                os.path.join("plan_executer", first_min_row["filename"]),
+                os.path.join(PLAN_EXPERIENCE_DIR, first_min_row["filename"]),
+                os.path.join(PLAN_EXECUTER_DIR, first_min_row["filename"]),
             )
             continue
         # ────────────────────────────────────────────────────────────────────
@@ -413,7 +426,7 @@ if __name__ == "__main__":
             cpu_used = 4
 
         # dossier global pour tous les resultats
-        global_run_dir = os.path.join("runs", launch_time_global)
+        global_run_dir = os.path.join(RUNS_DIR, launch_time_global)
         os.makedirs(global_run_dir, exist_ok=True)
 
         # Capturer l'heure de résultat de ce plan d'expérience spécifique
@@ -444,8 +457,8 @@ if __name__ == "__main__":
             )
             # Si réussi, déplacer vers plan_executer
             os.rename(
-                os.path.join("plan_experience", first_min_row["filename"]),
-                os.path.join("plan_executer", first_min_row["filename"]),
+                os.path.join(PLAN_EXPERIENCE_DIR, first_min_row["filename"]),
+                os.path.join(PLAN_EXECUTER_DIR, first_min_row["filename"]),
             )
 
             # ── POINT 3 : enregistrer le hash après succès ───────────────────
@@ -461,8 +474,8 @@ if __name__ == "__main__":
             )
             # Déplacer le plan échoué vers plan_failed avec préfixe
             os.rename(
-                os.path.join("plan_experience", first_min_row["filename"]),
-                os.path.join("plan_failed", first_min_row["filename"]),
+                os.path.join(PLAN_EXPERIENCE_DIR, first_min_row["filename"]),
+                os.path.join(PLAN_FAILED_DIR, first_min_row["filename"]),
             )
             continue  # Passer au suivant
 
@@ -475,7 +488,12 @@ if __name__ == "__main__":
             os.path.isdir(item)
             and not item.startswith("runs")
             and item.startswith("2026-")
-            and item not in ["plan_experience", "plan_executer", "plan_failed"]
+            and item
+            not in [
+                os.path.basename(PLAN_EXPERIENCE_DIR),
+                os.path.basename(PLAN_EXECUTER_DIR),
+                os.path.basename(PLAN_FAILED_DIR),
+            ]
         ):
             try:
                 os.rmdir(item)  # Supprime seulement si vide
