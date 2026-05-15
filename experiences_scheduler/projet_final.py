@@ -11,7 +11,7 @@ from multiprocessing import Pool
 import json
 import ast
 
-from test_similarity.hachage_test import (
+from tests.hachage_test import (
     hash_plan,
     load_hashes_db,
     register_executed_plan,
