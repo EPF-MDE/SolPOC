@@ -199,6 +199,7 @@ class SolpocInterface(tk.Tk):
             "Spectral Splitting": "plan_Spectral_splitting.py",
             "Curve RTA": "template_curve_RTA.py",
         }
+
         # Correspondance entre le label affiché dans l'UI et la variable dans le fichier template
         self.param_to_var = {
             "Comment": "Comment",
@@ -650,6 +651,16 @@ class SolpocInterface(tk.Tk):
         # Récupère la liste des paramètres pour ce template
         parameters = self.templates_config[self.selected_template]
 
+        # Création des groupes de parametres 
+        groups = [
+            ["Comment"],
+            ["algo", "pop_size", "mutation_DE", "crossover_rate", "f1", "f2", "budget"],
+            ["nb_run", "cpu_used", "seed"],
+            ["Mat_Stack", "Wl (start, stop, step)", "Ang (°)", "nb_layer"],
+            ["selection", "cost_function"],
+            ["n_range (min, max)", "Th_range (min, max)", "Th_Substrate (nm)"]
+        ]
+
         # Nombre de colonnes (label + entry) par ligne dans la grille
         cols_per_row = 3
 
@@ -678,95 +689,145 @@ class SolpocInterface(tk.Tk):
             self.meta_entries[field] = entry
 
         # --- Champs dynamiques propres au template ---
-        for i, param_name in enumerate(parameters):
-            row = i // cols_per_row
-            col = (i % cols_per_row) * 2
+        current_row = 0
 
-            # Label du paramètre
-            self.create_label(scroll_frame, param_name).grid(
-                row=row, column=col, padx=10, pady=8, sticky="w"
+        for group in groups:
+            visibles_param = [p for p in group if p in parameters]
+
+            if not visibles_param:
+                continue
+
+            # Créé un blox visuel pour chaque groupe
+            groupe_frame = tk.Frame(
+                scroll_frame,
+                bg="#1f1f1f",
+                highlightbackground="grey",
+                highlightthickness=1,
+                padx=6,
+                pady=2,
             )
 
+            groupe_frame.grid(
+                row = current_row,
+                column=0,
+                columnspan=10,
+                sticky="w",
+                padx=20,
+                pady=12,
+            )
+
+            for col_index, param_name in enumerate(visibles_param):
+            
+                col = col_index * 3
+
+            # Label du paramètre
+                self.create_label(groupe_frame, param_name).grid(
+                    row=current_row, column=col, padx=10, pady=8, sticky="w"
+                )
+
             # Type du paramètre
-            param_type = self.param_type.get(param_name, "text")
+                param_type = self.param_type.get(param_name, "text")
 
-            # Champ de saisie
-            if param_name == "algo":
-                entry = ttk.Combobox(
-                    scroll_frame,
-                    values=self.algo_options,
-                    width=22,
-                    state="readonly",
-                )
+                # Champ de saisie (spéciaux)
+                if param_name == "algo":
+                    entry = ttk.Combobox(
+                        groupe_frame,
+                        values=self.algo_options,
+                        width=22,
+                        state="readonly",
+                    )
 
-            elif param_name == "cost_function":
-                entry = ttk.Combobox(
-                    scroll_frame,
-                    values=self.cost_function_options,
-                    width=22,
-                    state="readonly",
-                )
+                elif param_name == "cost_function":
+                    entry = ttk.Combobox(
+                        groupe_frame,
+                        values=self.cost_function_options,
+                        width=22,
+                        state="readonly",
+                    )
 
-            elif param_name == "selection":
-                entry = ttk.Combobox(
-                    scroll_frame,
-                    values=self.selection_options,
-                    width=22,
-                    state="readonly",
-                )
+                elif param_name == "selection":
+                    entry = ttk.Combobox(
+                        groupe_frame,
+                        values=self.selection_options,
+                        width=22,
+                        state="readonly",
+                    )
 
-            elif param_type == "wavelength":
-                entry = tk.Frame(scroll_frame, bg="black")
+                elif param_type == "wavelength":
+                    entry = tk.Frame(groupe_frame, bg="black")
 
-                entry_start = tk.Entry(entry, width=8)
-                entry_stop = tk.Entry(entry, width=8)
-                entry_step = tk.Entry(entry, width=8)
+                    entry_start = tk.Entry(entry, width=6)
+                    entry_stop = tk.Entry(entry, width=6)
+                    entry_step = tk.Entry(entry, width=4)
 
-                entry_start.pack(side="left", padx=(0, 5))
-                entry_stop.pack(side="left", padx=(0, 5))
-                entry_step.pack(side="left")
+                    entry_start.pack(side="left", padx=(0, 2))
+                    entry_stop.pack(side="left", padx=(0, 2))
+                    entry_step.pack(side="left")
 
-                entry.entries = [entry_start, entry_stop, entry_step]
+                    entry.entries = [entry_start, entry_stop, entry_step]
 
-            elif param_type == "range":
-                entry = tk.Frame(scroll_frame, bg="black")
-
-                entry_min = tk.Entry(entry, width=10)
-                entry_max = tk.Entry(entry, width=10)
-                entry_min.pack(side="left", padx=(0, 5))
-                entry_max.pack(side="left")
-
-                entry.entries = [entry_min, entry_max]
-
-            else:
-                entry = tk.Entry(scroll_frame, width=25)
-
-            entry.grid(row=row, column=col + 1, padx=10, pady=8)
-
-            # Pré-remplit avec la valeur par défaut si disponible
-            if param_name in defaults:
-                default_value = defaults[param_name]
-                # wavelength
-                if param_type == "wavelength":
-                    parts = [p.strip() for p in default_value.split(",")]
-                    if len(parts) == 3:
-                        entry.entries[0].insert(0, parts[0])
-                        entry.entries[1].insert(0, parts[1])
-                        entry.entries[2].insert(0, parts[2])
-
-                # range
                 elif param_type == "range":
-                    parts = [p.strip() for p in default_value.split(",")]
-                    if len(parts) == 2:
-                        entry.entries[0].insert(0, parts[0])
-                        entry.entries[1].insert(0, parts[1])
-                else:
-                    if isinstance(entry, ttk.Combobox):
-                        entry.set(default_value)
-                    else:
-                        entry.insert(0, default_value)
+                    entry = tk.Frame(groupe_frame, bg="black")
 
-            self.parameter_entries[param_name] = entry
+                    entry_min = tk.Entry(entry, width=6)
+                    entry_max = tk.Entry(entry, width=6)
+                    entry_min.pack(side="left", padx=(0, 2))
+                    entry_max.pack(side="left")
+
+                    entry.entries = [entry_min, entry_max]
+
+                else:
+                    entry = tk.Entry(groupe_frame, width=14)
+
+                entry.grid(
+                    row=current_row, 
+                    column=col + 1, 
+                    padx=10, 
+                    pady=8,
+                    sticky="w")
+                
+                if col_index < len(visibles_param) - 1:
+                    separator = tk.Label(
+                    groupe_frame,
+                    text="|",
+                    fg="#777",
+                    bg="black",
+                    font=("Arial", 12, "bold")
+                    )
+                    separator.grid(
+                        row = current_row,
+                        column= col + 2,
+                        padx=8,
+                        pady=8,
+                        sticky="w",
+                    )
+
+                # Pré-remplit avec la valeur par défaut si disponible
+                if param_name in defaults:
+                    default_value = defaults[param_name]
+
+                    # wavelength
+                    if param_type == "wavelength":
+                        parts = [p.strip() for p in default_value.split(",")]
+
+                        if len(parts) == 3:
+                            entry.entries[0].insert(0, parts[0])
+                            entry.entries[1].insert(0, parts[1])
+                            entry.entries[2].insert(0, parts[2])
+
+                    # range
+                    elif param_type == "range":
+                        parts = [p.strip() for p in default_value.split(",")]
+
+                        if len(parts) == 2:
+                            entry.entries[0].insert(0, parts[0])
+                            entry.entries[1].insert(0, parts[1])
+                    else:
+                            entry.insert(0, default_value)
+
+                self.parameter_entries[param_name] = entry
+            current_row += 1
+
 
         # --- Boutons du bas ---
         bottom_frame = tk.Frame(container, bg="black")
@@ -1048,7 +1109,7 @@ class SolpocInterface(tk.Tk):
         if raw.lower() == "false":
             return False
 
-        # Listes numériques : Wl, Th_range, n_range, vf_range → [start, stop, step]
+        # Listes numériques : Wl, Th_range, n_range, vf_range -> [start, stop, step]
         list_keys = {"Wl", "Th_range", "n_range", "vf_range"}
         if json_key in list_keys:
             cleaned = raw.strip("[]() ")
@@ -1108,7 +1169,7 @@ class SolpocInterface(tk.Tk):
         }:
             return raw.strip("\"'")
 
-        # Listes de matériaux : "BK7, TiO2" → ["BK7", "TiO2"]
+        # Listes de matériaux : "BK7, TiO2" -> ["BK7", "TiO2"]
         if json_key in {"Mat_Stack", "Mat_Option"}:
             if raw.startswith("["):
                 try:
