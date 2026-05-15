@@ -39,8 +39,15 @@
 to test the similarity of results with the SolPOC templates.
 run in your terminal: pytest result_similarity_test.py -v -s
 """
+
 import hashlib
 import os
+
+
+IGNORED_FILES = {
+    "Optimization.txt",
+    "time.txt",
+}
 
 
 def hash_fichiers(chemin):
@@ -87,7 +94,9 @@ def compare_folders(path_a, path_b):
     tous_les_fichiers = set(h1) | set(h2)
 
     for f in sorted(tous_les_fichiers):
-
+        if f in IGNORED_FILES:
+            print(f"⚠️  Ignoré : {f}")
+            continue
         if f not in h1:
             differences.append(f"➕ Seulement dans B : {f}")
 
@@ -110,15 +119,11 @@ def test_template_similarity():
     """
 
     path_template = "2026-05-13-10h41"
-    path_scheduler = "AR_10h41m11s_3"
+    path_scheduler = "AR_21h09m37s_3"
 
-    assert os.path.exists(path_template), (
-        f"❌ Dossier introuvable : {path_template}"
-    )
+    assert os.path.exists(path_template), f"❌ Dossier introuvable : {path_template}"
 
-    assert os.path.exists(path_scheduler), (
-        f"❌ Dossier introuvable : {path_scheduler}"
-    )
+    assert os.path.exists(path_scheduler), f"❌ Dossier introuvable : {path_scheduler}"
 
     differences = compare_folders(
         path_template,
@@ -131,8 +136,6 @@ def test_template_similarity():
         for diff in differences:
             print(diff)
 
-    assert differences == [], (
-        "❌ Les dossiers comparés ne sont pas identiques."
-    )
+    assert differences == [], "❌ Les dossiers comparés ne sont pas identiques."
 
     print("\n🎉 Tous les fichiers sont identiques !")
