@@ -595,6 +595,7 @@ class SolpocInterface(tk.Tk):
         # Charge et affiche le contenu du dossier plans_experiences
         self.refresh_summary()
 
+
     def select_template(self, template_name):
 
         self.selected_template = template_name
@@ -654,15 +655,13 @@ class SolpocInterface(tk.Tk):
         # Création des groupes de parametres 
         groups = [
             ["Comment"],
-            ["algo", "pop_size", "mutation_DE", "crossover_rate", "f1", "f2", "budget"],
+            ["algo", "pop_size", "mutation_DE", "crossover_rate"],
+            ["f1", "f2", "budget"],
             ["nb_run", "cpu_used", "seed"],
             ["Mat_Stack", "Wl (start, stop, step)", "Ang (°)", "nb_layer"],
             ["selection", "cost_function"],
             ["n_range (min, max)", "Th_range (min, max)", "Th_Substrate (nm)"]
         ]
-
-        # Nombre de colonnes (label + entry) par ligne dans la grille
-        cols_per_row = 3
 
         # Priority
         self.meta_entries = {}
@@ -693,6 +692,9 @@ class SolpocInterface(tk.Tk):
 
         for group in groups:
             visibles_param = [p for p in group if p in parameters]
+            # for p in group:
+            #     if p in parameters:
+            #         p.append(group)
 
             if not visibles_param:
                 continue
@@ -704,16 +706,18 @@ class SolpocInterface(tk.Tk):
                 highlightbackground="grey",
                 highlightthickness=1,
                 padx=6,
-                pady=2,
+                pady=3,
             )
+
+            scroll_frame.grid_columnconfigure(0, weight=1)
 
             groupe_frame.grid(
                 row = current_row,
                 column=0,
                 columnspan=10,
-                sticky="w",
+                sticky="ew",
                 padx=20,
-                pady=12,
+                pady=6,
             )
 
             for col_index, param_name in enumerate(visibles_param):
@@ -775,6 +779,9 @@ class SolpocInterface(tk.Tk):
                     entry_max.pack(side="left")
 
                     entry.entries = [entry_min, entry_max]
+                
+                elif param_name == "Comment":
+                    entry = tk.Entry(groupe_frame, width=150)
 
                 else:
                     entry = tk.Entry(groupe_frame, width=14)
