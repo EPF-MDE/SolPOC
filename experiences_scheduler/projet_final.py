@@ -13,16 +13,66 @@ from multiprocessing import Pool
 import json
 import ast
 import sys
+# import importlib
 
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
+# Ajouter le dossier contenant les fonctions custom
+sys.path.append(
+    os.path.abspath(
+        os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "test_functions",
+        )
+    )
+)
 from tests.hachage_test import (
     hash_plan,
     load_hashes_db,
     register_executed_plan,
     is_already_executed,
 )
+
+# CUSTOM_MODULE_AVAILABLE = False
+
+# try:
+#     importlib.import_module("function_R_s_weighted")
+#     CUSTOM_MODULE_AVAILABLE = True
+
+# except ImportError:
+#     print(
+#         "WARNING: function_R_s_weighted module not found. Falling back to sol module."
+#     )
+
+
+# def get_from_modules(
+#     name,
+#     module_name="function_R_s_weighted",
+# ):
+
+#     # Try custom module only if available
+#     if CUSTOM_MODULE_AVAILABLE:
+#         custom_module = importlib.import_module(module_name)
+
+#         if hasattr(custom_module, name):
+#             print(f"Using custom function '{name}' from module '{module_name}'.")
+
+#             return getattr(custom_module, name)
+
+#         else:
+#             print(
+#                 f"WARNING: '{name}' not found "
+#                 f"in custom module '{module_name}'. "
+#                 f"Falling back to SolPOC."
+#             )
+
+#     # Fallback SolPOC
+#     if hasattr(sol, name):
+#         return getattr(sol, name)
+
+#     # Final error
+#     raise AttributeError(f"'{name}' not found in '{module_name}' or solpoc.")
 
 try:
     import function_R_s_weighted as test
