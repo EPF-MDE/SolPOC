@@ -17,16 +17,16 @@ import sys
 
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-# Ajouter le dossier contenant les fonctions custom
-sys.path.append(
-    os.path.abspath(
-        os.path.join(
-            os.path.dirname(__file__),
-            "..",
-            "test_functions",
-        )
-    )
-)
+# # Ajouter le dossier contenant les fonctions custom
+# sys.path.append(
+#     os.path.abspath(
+#         os.path.join(
+#             os.path.dirname(__file__),
+#             "..",
+#             "test_functions",
+#         )
+#     )
+# )
 from tests.hachage_test import (
     hash_plan,
     load_hashes_db,
