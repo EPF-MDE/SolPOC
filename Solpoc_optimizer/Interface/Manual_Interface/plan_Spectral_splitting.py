@@ -1,6 +1,6 @@
 import numpy as np
 import solpoc as sol
-from plan_utils import generate_json
+from Solpoc_optimizer.Interface.Manual_Interface.plan_utils import generate_json
 
 # ----------------------------------------------------------------------------#
 #                   SCRIPT PARAMETERS - START                                #
@@ -8,31 +8,35 @@ from plan_utils import generate_json
 
 priority = 1
 
-Comment = "A 4 periodic layers of Bragg mirror, deposited on 1mm BK7 glass"
-Mat_Stack = ["BK7", "SiO2", "TiO2", "SiO2", "TiO2", "SiO2", "TiO2", "SiO2", "TiO2"]
-# ou : Mat_Stack = sol.write_stack_period(["BK7"], ["SiO2", "TiO2"], 4)
+Comment = "Exemple of spectral-splitting coating (dichroic mirror) for PV-CST, 20 layers of SiO2/TiO2"
+Mat_Stack = sol.write_stack_period(["BK7"], ["TiO2", "SiO2"], 10)
 
 algo = sol.DEvol
 selection = sol.selection_max
-cost_function = sol.evaluate_R_Brg
+cost_function = sol.evaluate_TRT
 
-Wl = np.arange(400, 800, 5)
+Wl = np.arange(280, 2505, 5)
+Wl_Sol, Sol_Spec, name_Sol_Spec = sol.open_SolSpec("Materials/SolSpec.txt", "GT")
 Th_Substrate = 1e6
-Th_range = (0, 200)
+Th_range = (0, 250)
+vf_range = (0, 1.0)
 Ang = 0
+lambda_cut_1 = 500
+lambda_cut_2 = 1000
 
 pop_size = 30
 crossover_rate = 0.5
-f1, f2 = 0.9, 0.8
-mutation_DE = "current_to_best"
+f1, f2 = 1.0, 1.0
+mutation_DE = "rand_1"
 
-budget = 2000
-nb_run = 8
-seed = 2905804230
+budget = 30000
+nb_run = 4
+cpu_used = 4
+seed = None
 
 # ----------------------------------------------------------------------------#
 #                   SCRIPT PARAMETERS - END                                  #
 # ----------------------------------------------------------------------------#
 
 if __name__ == "__main__":
-    generate_json(locals(), template_name="Bragg Mirror", priority=priority)
+    generate_json(locals(), template_name="Spectral Splitting", priority=priority)

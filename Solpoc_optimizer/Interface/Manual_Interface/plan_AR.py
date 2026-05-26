@@ -1,6 +1,6 @@
 import numpy as np
 import solpoc as sol
-from plan_utils import generate_json
+from Solpoc_optimizer.Interface.Manual_Interface.plan_utils import generate_json
 
 # ----------------------------------------------------------------------------#
 #                   SCRIPT PARAMETERS - START                                #
@@ -8,28 +8,25 @@ from plan_utils import generate_json
 
 priority = 1
 
-Comment = "Tutorial : selective coating for solar thermal systems, like CSP"
-Mat_Stack = ["Fe", "W", "W-Al2O3", "Al2O3"]
+Comment = "Tutorial : anti-reflective coating for human eye, with research of the best theorical refractiv index"
+Mat_Stack = ["BK7"]
 
 algo = sol.DEvol
 selection = sol.selection_max
-cost_function = sol.evaluate_rh
+cost_function = sol.evaluate_T_s
 
-Wl = sol.Wl_selectif()
-Wl_Sol, Sol_Spec, name_Sol_Spec = sol.open_SolSpec("Materials/SolSpec.txt", "DC")
+Wl = np.arange(280, 2505, 5)
+Wl_Sol, Sol_Spec, name_Sol_Spec = sol.open_SolSpec("Materials/SolSpec.txt", "GT")
 Th_Substrate = 1e6
 Th_range = (0, 300)
-vf_range = (0, 1.0)
+n_range = (1.442, 2.42)
+nb_layer = 3
 Ang = 0
-
-C = 80
-T_air = 20 + 273
-T_abs = 300 + 273
 
 pop_size = 30
 crossover_rate = 0.5
-f1, f2 = 0.9, 0.8
-mutation_DE = "current_to_best"
+f1 = 1.0
+mutation_DE = "rand_1"
 
 budget = 500
 nb_run = 4
@@ -41,4 +38,4 @@ seed = None
 # ----------------------------------------------------------------------------#
 
 if __name__ == "__main__":
-    generate_json(locals(), template_name="Selective Coating", priority=priority)
+    generate_json(locals(), template_name="AR", priority=priority)

@@ -3,7 +3,7 @@ import os
 
 import pytest
 
-from Interface.interface import SolpocInterface
+from Solpoc_optimizer.Interface.interface import SolpocInterface
 
 
 TEMPLATES = [

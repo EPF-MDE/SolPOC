@@ -1,6 +1,6 @@
 import numpy as np
 import solpoc as sol
-from plan_utils import generate_json
+from Solpoc_optimizer.Interface.Manual_Interface.plan_utils import generate_json
 
 # ----------------------------------------------------------------------------#
 #                   SCRIPT PARAMETERS - START                                #
@@ -8,34 +8,31 @@ from plan_utils import generate_json
 
 priority = 1
 
-Comment = "A low emissivity coating for building"
-Mat_Stack = ["BK7", "Si3N4", "ZnO", "Ag", "ZnO", "Si3N4"]
+Comment = "A 4 periodic layers of Bragg mirror, deposited on 1mm BK7 glass"
+Mat_Stack = ["BK7", "SiO2", "TiO2", "SiO2", "TiO2", "SiO2", "TiO2", "SiO2", "TiO2"]
+# ou : Mat_Stack = sol.write_stack_period(["BK7"], ["SiO2", "TiO2"], 4)
 
 algo = sol.DEvol
 selection = sol.selection_max
-cost_function = sol.evaluate_low_e
+cost_function = sol.evaluate_R_Brg
 
-Wl = np.arange(280, 1505, 5)
-Wl_Sol, Sol_Spec, name_Sol_Spec = sol.open_SolSpec("Materials/SolSpec.txt", "GT")
+Wl = np.arange(400, 800, 5)
 Th_Substrate = 1e6
 Th_range = (0, 200)
 Ang = 0
-d_Stack_Opt = ["no", "no", 10, "no", "no"]
-Lambda_cut_1 = 800
 
 pop_size = 30
 crossover_rate = 0.5
 f1, f2 = 0.9, 0.8
 mutation_DE = "current_to_best"
 
-budget = 3000
+budget = 2000
 nb_run = 8
-cpu_used = 8
-seed = None
+seed = 2905804230
 
 # ----------------------------------------------------------------------------#
 #                   SCRIPT PARAMETERS - END                                  #
 # ----------------------------------------------------------------------------#
 
 if __name__ == "__main__":
-    generate_json(locals(), template_name="Low-e", priority=priority)
+    generate_json(locals(), template_name="Bragg Mirror", priority=priority)
