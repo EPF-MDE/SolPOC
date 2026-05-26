@@ -5,7 +5,10 @@ import re
 import os
 import ast
 from datetime import datetime
-
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
+import numpy as np
+import solpoc as sol
 
 
 class SolpocInterface(tk.Tk):
@@ -33,6 +36,9 @@ class SolpocInterface(tk.Tk):
             "AR": [
                 "Comment",
                 "Mat_Stack",
+                "algo",
+                "selection",
+                "cost_function",
                 "Wl (start, stop, step)",
                 "Th_Substrate (nm)",
                 "Th_range (min, max)",
@@ -51,6 +57,9 @@ class SolpocInterface(tk.Tk):
             "Bragg Mirror": [
                 "Comment",
                 "Mat_Stack",
+                "algo",
+                "selection",
+                "cost_function",
                 "Wl (start, stop, step)",
                 "Th_Substrate (nm)",
                 "Th_range (min, max)",
@@ -67,6 +76,9 @@ class SolpocInterface(tk.Tk):
             "Low-e": [
                 "Comment",
                 "Mat_Stack",
+                "algo",
+                "selection",
+                "cost_function",
                 "Wl (start, stop, step)",
                 "Th_Substrate (nm)",
                 "Th_range (min, max)",
@@ -86,6 +98,9 @@ class SolpocInterface(tk.Tk):
             "Optimization with Materials": [
                 "Mat_Stack",
                 "Mat_Option",
+                "algo",
+                "selection",
+                "cost_function",
                 "Th_range (min, max)",
                 "Th_Substrate (nm)",
                 "Wl (start, stop, step)",
@@ -101,6 +116,9 @@ class SolpocInterface(tk.Tk):
             "PV Cells": [
                 "Comment",
                 "Mat_Stack",
+                "algo",
+                "selection",
+                "cost_function",
                 "Wl (start, stop, step)",
                 "Th_Substrate (nm)",
                 "Th_range (min, max)",
@@ -118,6 +136,9 @@ class SolpocInterface(tk.Tk):
             "Selective Coating": [
                 "Comment",
                 "Mat_Stack",
+                "algo",
+                "selection",
+                "cost_function",
                 "Th_Substrate (nm)",
                 "Th_range (min, max)",
                 "vf_range (min, max)",
@@ -138,6 +159,9 @@ class SolpocInterface(tk.Tk):
             "Spectral Splitting": [
                 "Comment",
                 "Mat_Stack",
+                "algo",
+                "selection",
+                "cost_function",
                 "Wl (start, stop, step)",
                 "Th_Substrate (nm)",
                 "Th_range (min, max)",
@@ -155,23 +179,34 @@ class SolpocInterface(tk.Tk):
                 "cpu_used",
                 "seed",
             ],
+            "Curve RTA": [
+                "Mat_Stack",
+                "d_Stack",
+                "vf",
+                "Wl (start, stop, step)",
+                "Ang (°)",
+            ],
         }
 
         # Correspondance entre le nom du template et son fichier Python
         self.file_map = {
-            "AR": "template_AR.py",
-            "Bragg Mirror": "template_Bragg_mirror.py",
-            "Low-e": "template_low_e.py",
-            "Optimization with Materials": "template_optimization_with_materials.py",
-            "PV Cells": "template_PVcells.py",
-            "Selective Coating": "template_selective_coating.py",
-            "Spectral Splitting": "template_spectral_splitting.py",
+            "AR": "plan_AR.py",
+            "Bragg Mirror": "plan_Bragg_mirror.py",
+            "Low-e": "plan_Low_e.py",
+            "Optimization with Materials": "plan_Optimization_with_materials.py",
+            "PV Cells": "plan_PV_cells.py",
+            "Selective Coating": "plan_Selective_coating.py",
+            "Spectral Splitting": "plan_Spectral_splitting.py",
+            "Curve RTA": "template_curve_RTA.py",
         }
 
         # Correspondance entre le label affiché dans l'UI et la variable dans le fichier template
         self.param_to_var = {
             "Comment": "Comment",
             "Mat_Stack": "Mat_Stack",
+            "algo": "algo",
+            "selection": "selection",
+            "cost_function": "cost_function",
             "Wl (start, stop, step)": "Wl",
             "Th_Substrate (nm)": "Th_Substrate",
             "Th_range (min, max)": "Th_range",
@@ -197,6 +232,8 @@ class SolpocInterface(tk.Tk):
             "T_abs (K)": "T_abs",
             "lambda_cut_1 (nm)": "lambda_cut_1",
             "lambda_cut_2 (nm)": "lambda_cut_2",
+            "d_Stack": "d_Stack",
+            "vf": "vf",
         }
 
         # Type attendu pour chaque paramètre (utilisé pour la validation des saisies)
@@ -204,6 +241,9 @@ class SolpocInterface(tk.Tk):
             "Comment": "text",
             "Mat_Stack": "list",
             "Mat_Option": "list",
+            "algo": "function_ref",
+            "selection": "function_ref",
+            "cost_function": "function_ref",
             "Wl (start, stop, step)": "wavelength",
             "Th_Substrate (nm)": "number",
             "Th_range (min, max)": "range",
@@ -228,7 +268,48 @@ class SolpocInterface(tk.Tk):
             "f2": "number",
             "mutation_DE": "text",
             "Mode_choose_material": "text",
+            "d_Stack": "list",
+            "vf": "list",
         }
+
+        # Fonctions pour algo
+        self.algo_options = [
+            "DEvol",
+            "optimize_ga",
+            "optimize_strangle",
+            "PSO",
+            "simulated_annealing",
+            "One_plus_One_ES",
+        ]
+
+        # Fonctions pour cost_function
+        self.cost_function_options = [
+            "evaluate_example",
+            "evaluate_R",
+            "evaluate_T",
+            "evaluate_R_s",
+            "evaluate_T_s",
+            "evaluate_A_s",
+            "evaluate_R_Brg",
+            "evaluate_T_pv",
+            "evaluate_A_pv",
+            "evaluate_T_vis",
+            "evaluate_low_e",
+            "evaluate_rh",
+            "evaluate_RTR",
+            "evaluate_netW_PV_CSP",
+            "evaluate_R_s_AOI",
+            "evaluate_TRT",
+            "evaluate_RTA_s",
+            "evaluate_EBB",
+            "evaluate_fit_R",
+            "evaluate_fit_T",
+            "evaluate_fit_T2face",
+            "evaluate_fit_RT",
+        ]
+
+        # Fonctions pour selection
+        self.selection_options = ["selection_max", "selection_min"]
 
         # Construction de l'interface
         self.create_header()
@@ -248,7 +329,7 @@ class SolpocInterface(tk.Tk):
 
         # Chemin vers le fichier template (dossier Examples/)
         filepath = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "..", "Examples", filename
+            os.path.dirname(os.path.abspath(__file__)), "..", "Plans", filename
         )
 
         if not os.path.exists(filepath):
@@ -259,6 +340,14 @@ class SolpocInterface(tk.Tk):
 
             # Ignore tout ce qui suit la zone modifiable
             content = content.split("# %% You should stop modifying")[0]
+
+            # Gère les affectations sur plusieurs lignes par exemple :
+            # selection = (
+            #     sol.selection_max
+            # )
+            content = re.sub(
+                r"(\w+)\s*=\s*\(\s*\n\s*(sol\.\w+)\s*\n\s*\)", r"\1 = \2", content
+            )
 
             # Supprime les lignes commentées pour éviter de lire de fausses valeurs
             content = "\n".join(
@@ -365,6 +454,13 @@ class SolpocInterface(tk.Tk):
                 return value[len("np.arange(") : -1]
             if value.startswith("sol.Wl_selectif(") and value.endswith(")"):
                 return value[len("sol.Wl_selectif(") : -1]
+
+        # Reference des fonctions SOLPOC : sol.DEvol, sol.selection_max, etc.
+        if param_type == "function_ref":
+            value = raw_value.strip()
+            if value.startswith("sol."):
+                value = value[len("sol.") :]
+            return value
 
         # Valeur brute pour tous les autres cas
         return raw_value
@@ -499,10 +595,15 @@ class SolpocInterface(tk.Tk):
         # Charge et affiche le contenu du dossier plans_experiences
         self.refresh_summary()
 
+
     def select_template(self, template_name):
-        """Enregistre le template sélectionné et bascule vers la page des paramètres."""
+
         self.selected_template = template_name
-        self.show_parameters_view()
+
+        if template_name == "Curve RTA":
+            self.show_rta_view()
+        else:
+            self.show_parameters_view()
 
     # ------------------------------------------------------------------
     # PAGE PARAMETERS
@@ -551,15 +652,22 @@ class SolpocInterface(tk.Tk):
         # Récupère la liste des paramètres pour ce template
         parameters = self.templates_config[self.selected_template]
 
-        # Nombre de colonnes (label + entry) par ligne dans la grille
-        cols_per_row = 3
+        # Création des groupes de parametres 
+        groups = [
+            ["Comment"],
+            ["algo", "pop_size", "mutation_DE", "crossover_rate"],
+            ["f1", "f2", "budget"],
+            ["nb_run", "cpu_used", "seed"],
+            ["Mat_Stack", "Wl (start, stop, step)", "Ang (°)", "nb_layer"],
+            ["selection", "cost_function"],
+            ["n_range (min, max)", "Th_range (min, max)", "Th_Substrate (nm)"]
+        ]
 
         # Priority
         self.meta_entries = {}
 
         meta_frame = tk.Frame(container, bg="black")
         meta_frame.pack(fill="x", padx=20, pady=10)
-
         meta_fields = ["Priority"]
 
         for i, field in enumerate(meta_fields):
@@ -580,24 +688,153 @@ class SolpocInterface(tk.Tk):
             self.meta_entries[field] = entry
 
         # --- Champs dynamiques propres au template ---
-        for i, param_name in enumerate(parameters):
-            row = i // cols_per_row
-            col = (i % cols_per_row) * 2
+        current_row = 0
 
-            # Label du paramètre
-            self.create_label(scroll_frame, param_name).grid(
-                row=row, column=col, padx=10, pady=8, sticky="w"
+        for group in groups:
+            visibles_param = [p for p in group if p in parameters]
+            # for p in group:
+            #     if p in parameters:
+            #         p.append(group)
+
+            if not visibles_param:
+                continue
+
+            # Créé un blox visuel pour chaque groupe
+            groupe_frame = tk.Frame(
+                scroll_frame,
+                bg="#1f1f1f",
+                highlightbackground="grey",
+                highlightthickness=1,
+                padx=6,
+                pady=3,
             )
 
-            # Champ de saisie
-            entry = tk.Entry(scroll_frame, width=25)
-            entry.grid(row=row, column=col + 1, padx=10, pady=8)
+            scroll_frame.grid_columnconfigure(0, weight=1)
 
-            # Pré-remplit avec la valeur par défaut si disponible
-            if param_name in defaults:
-                entry.insert(0, defaults[param_name])
+            groupe_frame.grid(
+                row = current_row,
+                column=0,
+                columnspan=10,
+                sticky="ew",
+                padx=20,
+                pady=6,
+            )
 
-            self.parameter_entries[param_name] = entry
+            for col_index, param_name in enumerate(visibles_param):
+            
+                col = col_index * 3
+
+            # Label du paramètre
+                self.create_label(groupe_frame, param_name).grid(
+                    row=current_row, column=col, padx=10, pady=8, sticky="w"
+                )
+
+            # Type du paramètre
+                param_type = self.param_type.get(param_name, "text")
+
+                # Champ de saisie (spéciaux)
+                if param_name == "algo":
+                    entry = ttk.Combobox(
+                        groupe_frame,
+                        values=self.algo_options,
+                        width=22,
+                        state="readonly",
+                    )
+
+                elif param_name == "cost_function":
+                    entry = ttk.Combobox(
+                        groupe_frame,
+                        values=self.cost_function_options,
+                        width=22,
+                        state="readonly",
+                    )
+
+                elif param_name == "selection":
+                    entry = ttk.Combobox(
+                        groupe_frame,
+                        values=self.selection_options,
+                        width=22,
+                        state="readonly",
+                    )
+
+                elif param_type == "wavelength":
+                    entry = tk.Frame(groupe_frame, bg="black")
+
+                    entry_start = tk.Entry(entry, width=6)
+                    entry_stop = tk.Entry(entry, width=6)
+                    entry_step = tk.Entry(entry, width=4)
+
+                    entry_start.pack(side="left", padx=(0, 2))
+                    entry_stop.pack(side="left", padx=(0, 2))
+                    entry_step.pack(side="left")
+
+                    entry.entries = [entry_start, entry_stop, entry_step]
+
+                elif param_type == "range":
+                    entry = tk.Frame(groupe_frame, bg="black")
+
+                    entry_min = tk.Entry(entry, width=6)
+                    entry_max = tk.Entry(entry, width=6)
+                    entry_min.pack(side="left", padx=(0, 2))
+                    entry_max.pack(side="left")
+
+                    entry.entries = [entry_min, entry_max]
+                
+                elif param_name == "Comment":
+                    entry = tk.Entry(groupe_frame, width=150)
+
+                else:
+                    entry = tk.Entry(groupe_frame, width=14)
+
+                entry.grid(
+                    row=current_row, 
+                    column=col + 1, 
+                    padx=10, 
+                    pady=8,
+                    sticky="w")
+                
+                if col_index < len(visibles_param) - 1:
+                    separator = tk.Label(
+                    groupe_frame,
+                    text="|",
+                    fg="#777",
+                    bg="black",
+                    font=("Arial", 12, "bold")
+                    )
+                    separator.grid(
+                        row = current_row,
+                        column= col + 2,
+                        padx=8,
+                        pady=8,
+                        sticky="w",
+                    )
+
+                # Pré-remplit avec la valeur par défaut si disponible
+                if param_name in defaults:
+                    default_value = defaults[param_name]
+
+                    # wavelength
+                    if param_type == "wavelength":
+                        parts = [p.strip() for p in default_value.split(",")]
+
+                        if len(parts) == 3:
+                            entry.entries[0].insert(0, parts[0])
+                            entry.entries[1].insert(0, parts[1])
+                            entry.entries[2].insert(0, parts[2])
+
+                    # range
+                    elif param_type == "range":
+                        parts = [p.strip() for p in default_value.split(",")]
+
+                        if len(parts) == 2:
+                            entry.entries[0].insert(0, parts[0])
+                            entry.entries[1].insert(0, parts[1])
+                    else:
+                            entry.insert(0, default_value)
+
+                self.parameter_entries[param_name] = entry
+            current_row += 1
+
 
         # --- Boutons du bas ---
         bottom_frame = tk.Frame(container, bg="black")
@@ -640,8 +877,17 @@ class SolpocInterface(tk.Tk):
         for param_name, entry in self.parameter_entries.items():
             if param_name.startswith("__"):
                 continue
+            if self.param_type.get(param_name) == "wavelength":
+                value = (
+                    f"{entry.entries[0].get().strip()}, "
+                    f"{entry.entries[1].get().strip()}, "
+                    f"{entry.entries[2].get().strip()}"
+                )
 
-            value = entry.get().strip()
+            elif self.param_type.get(param_name) == "range":
+                value = f"{entry.entries[0].get().strip()}, {entry.entries[1].get().strip()}"
+            else:
+                value = entry.get().strip()
 
             # Champ vide
             if not value:
@@ -662,10 +908,26 @@ class SolpocInterface(tk.Tk):
         # Crée un dictionnaire pour stocker les valeurs de ce plan
         values_selected = {}
         for label, widget in self.parameter_entries.items():
-            values_selected[label] = widget.get()
+            if self.param_type.get(label) == "wavelength":
+                values_selected[label] = (
+                    f"{widget.entries[0].get().strip()}, "
+                    f"{widget.entries[1].get().strip()}, "
+                    f"{widget.entries[2].get().strip()}"
+                )
+
+            elif self.param_type.get(label) == "range":
+                values_selected[label] = (
+                    f"{widget.entries[0].get().strip()}, {widget.entries[1].get().strip()}"
+                )
+            else:
+                values_selected[label] = widget.get()
 
         # on prepare le paquet complet de ce plan a mettre en attente
-        current_plan = {"values": values_selected, "priority": priority}
+        current_plan = {
+            "template": self.selected_template,
+            "values": values_selected,
+            "priority": priority,
+        }
 
         # On l'ajoute dans la liste temporaire
         self.temp_plans.append(current_plan)
@@ -685,7 +947,10 @@ class SolpocInterface(tk.Tk):
 
         # Parcours chaque plan stocké dans la liste
         for plan in self.temp_plans:
-            # On appelle la fonction de sauvegarde
+            # remet le template associé au plan courant
+            self.selected_template = plan["template"]
+
+            # sauvegarde le plan courant
             self.build_and_save_json(plan["values"], plan["priority"])
 
         # Message de succes finale
@@ -781,6 +1046,10 @@ class SolpocInterface(tk.Tk):
                     return False
             return False
 
+        # Référence de fonction SOLPOC choisie dans une liste déroulante
+        if param_type == "function_ref":
+            return value != ""
+
     def value_list(self, value):
         """Vérifie qu'une valeur est une liste de nombres (int ou float)."""
         try:
@@ -847,7 +1116,7 @@ class SolpocInterface(tk.Tk):
         if raw.lower() == "false":
             return False
 
-        # Listes numériques : Wl, Th_range, n_range, vf_range → [start, stop, step]
+        # Listes numériques : Wl, Th_range, n_range, vf_range -> [start, stop, step]
         list_keys = {"Wl", "Th_range", "n_range", "vf_range"}
         if json_key in list_keys:
             cleaned = raw.strip("[]() ")
@@ -897,10 +1166,17 @@ class SolpocInterface(tk.Tk):
                 return None
 
         # Chaînes de texte sans guillemets
-        if json_key in {"mutation_DE", "Comment", "Mode_choose_material"}:
+        if json_key in {
+            "mutation_DE",
+            "Comment",
+            "Mode_choose_material",
+            "algo",
+            "cost_function",
+            "selection",
+        }:
             return raw.strip("\"'")
 
-        # Listes de matériaux : "BK7, TiO2" → ["BK7", "TiO2"]
+        # Listes de matériaux : "BK7, TiO2" -> ["BK7", "TiO2"]
         if json_key in {"Mat_Stack", "Mat_Option"}:
             if raw.startswith("["):
                 try:
@@ -1040,12 +1316,12 @@ class SolpocInterface(tk.Tk):
             experiment[json_key] = self.parse_value(text_value.strip(), json_key)
 
         # Crée le dossier de sauvegarde si nécessaire
-        folder = "plans_experiences"
+        folder = os.path.join("..", "experiences_scheduler", "plan_experience")
         os.makedirs(folder, exist_ok=True)
 
         # Nom du fichier : Template_priorité_Prénom_Nom_date_heure.json
         template_slug = self.selected_template.replace(" ", "_")
-        timestamp = datetime.now().strftime("%Y-%m-%d_%Hh%Mm%Ss")
+        timestamp = datetime.now().strftime("%Y-%m-%d_%Hh%Mm%Ss_%f")
         filename = f"{template_slug}_{timestamp}_{priority}.json"
         filepath = os.path.join(folder, filename)
 
@@ -1064,7 +1340,7 @@ class SolpocInterface(tk.Tk):
 
         self.summary_text.delete("1.0", tk.END)
 
-        folder = "plans_experiences"
+        folder = os.path.join("..", "experiences_scheduler", "plan_experience")
 
         # Dossier inexistant → message vide
         if not os.path.exists(folder):
@@ -1117,8 +1393,7 @@ class SolpocInterface(tk.Tk):
                 exp = json.load(f)
 
             # La priorité est le 2e segment du nom de fichier (après le template)
-            parts = filename.split("_")
-            priority_from_filename = parts[1] if len(parts) > 1 else "?"
+            priority_from_filename = filename.replace(".json", "").split("_")[-1]
 
             self.summary_text.insert(tk.END, "─" * 60 + "\n")
             self.summary_text.insert(
@@ -1138,6 +1413,184 @@ class SolpocInterface(tk.Tk):
             self.summary_text.insert(tk.END, f"\n")
 
         self.summary_text.insert(tk.END, "─" * 60 + "\n")
+
+    def show_rta_view(self):
+
+        self.clear_content()
+
+        self.update_nav_highlight("parameters")
+
+        container = tk.Frame(self.content_frame, bg="black")
+        container.pack(fill="both", expand=True)
+
+        self.create_label(container, "Curve RTA", ("Arial", 18, "bold")).pack(pady=10)
+
+        # ========================================================
+        # ZONE INPUTS
+        # ========================================================
+
+        input_frame = tk.Frame(container, bg="black")
+        input_frame.pack(side="left", fill="y", padx=20, pady=20)
+
+        self.rta_entries = {}
+
+        fields = [
+            ("Mat_Stack", "BK7, Al2O3, Al, air"),
+            ("d_Stack", "1000000, 50, 200, 50"),
+            ("Wl (start, stop, step)", "280, 2500, 5"),
+            ("Ang", "0"),
+        ]
+
+        for i, (label, default) in enumerate(fields):
+            tk.Label(
+                input_frame, text=label, bg="black", fg="white", font=("Arial", 11)
+            ).grid(row=i, column=0, sticky="w", pady=8)
+
+            entry = tk.Entry(input_frame, width=30)
+
+            entry.insert(0, default)
+
+            entry.grid(row=i, column=1, pady=8, padx=10)
+
+            self.rta_entries[label] = entry
+
+        # ========================================================
+        # BOUTON PLOT
+        # ========================================================
+
+        tk.Button(
+            input_frame,
+            text="Plot RTA",
+            width=20,
+            bg="#4CAF50",
+            fg="white",
+            command=self.compute_rta_curve,
+        ).grid(row=len(fields) + 1, column=0, columnspan=2, pady=20)
+
+        tk.Button(
+            input_frame, text="← Back", width=15, command=self.show_template_view
+        ).grid(row=len(fields) + 2, column=0, sticky="w", pady=20)
+
+        # ========================================================
+        # FRAME GRAPH
+        # ========================================================
+
+        self.graph_frame = tk.Frame(container, bg="white")
+        self.graph_frame.pack(side="right", fill="both", expand=True, padx=20, pady=20)
+
+    # ============================================================
+    # AJOUTER CETTE FONCTION DANS LA CLASSE
+    # ============================================================
+
+    def compute_rta_curve(self):
+
+        try:
+            # ====================================================
+            # RECUPERATION INPUTS
+            # ====================================================
+
+            mat_stack = [
+                x.strip() for x in self.rta_entries["Mat_Stack"].get().split(",")
+            ]
+
+            d_stack = [
+                float(x.strip()) for x in self.rta_entries["d_Stack"].get().split(",")
+            ]
+
+            wl_values = [
+                float(x.strip())
+                for x in self.rta_entries["Wl (start, stop, step)"].get().split(",")
+            ]
+
+            wl_start, wl_stop, wl_step = wl_values
+
+            ang = float(self.rta_entries["Ang"].get())
+
+            # ====================================================
+            # WAVELENGTH
+            # ====================================================
+
+            Wl = np.arange(wl_start, wl_stop, wl_step)
+
+            # ====================================================
+            # MATERIALS
+            # ====================================================
+
+            n_Stack, k_Stack = sol.Made_Stack(mat_stack, Wl)
+
+            # ====================================================
+            # SOLAR SPECTRUM
+            # ====================================================
+
+            Wl_Sol, Sol_Spec, name_Sol_Spec = sol.open_SolSpec(
+                "Materials/SolSpec.txt", "GT"
+            )
+
+            Sol_Spec = np.interp(Wl, Wl_Sol, Sol_Spec)
+
+            # ====================================================
+            # PARAMETERS
+            # ====================================================
+
+            parameters = sol.get_parameters(
+                Wl=Wl,
+                Ang=ang,
+                d_Stack=d_stack,
+                vf=None,
+                Th_Substrate=d_stack[0],
+                Mat_Stack=mat_stack,
+                Sol_Spec=Sol_Spec,
+                n_Stack=n_Stack,
+                k_Stack=k_Stack,
+                coherency_limit=2000,
+            )
+
+            # ====================================================
+            # CALCUL RTA
+            # ====================================================
+
+            R, T, A = sol.RTA_curve_inco(d_stack, parameters)
+
+            # ====================================================
+            # CLEAR OLD GRAPH
+            # ====================================================
+
+            for widget in self.graph_frame.winfo_children():
+                widget.destroy()
+
+            # ====================================================
+            # FIGURE
+            # ====================================================
+
+            fig = Figure(figsize=(7, 5), dpi=100)
+
+            ax = fig.add_subplot(111)
+
+            ax.plot(Wl, R, label="Reflectance")
+            ax.plot(Wl, T, label="Transmittance")
+            ax.plot(Wl, A, label="Absorptance")
+
+            ax.set_xlabel("Wavelength (nm)")
+            ax.set_ylabel("Value")
+
+            ax.set_ylim(0, 1)
+
+            ax.legend()
+
+            ax.grid(True)
+
+            # ====================================================
+            # TKINTER CANVAS
+            # ====================================================
+
+            canvas = FigureCanvasTkAgg(fig, master=self.graph_frame)
+
+            canvas.draw()
+
+            canvas.get_tk_widget().pack(fill="both", expand=True)
+
+        except Exception as e:
+            messagebox.showerror("RTA Error", str(e))
 
 
 if __name__ == "__main__":
