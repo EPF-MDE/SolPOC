@@ -1,8 +1,6 @@
 import json
 import os
-
 import pytest
-
 from Solpoc_optimizer.Interface.interface import SolpocInterface
 
 
