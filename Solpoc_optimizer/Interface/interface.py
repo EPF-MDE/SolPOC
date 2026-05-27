@@ -9,6 +9,8 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import numpy as np
 import solpoc as sol
+import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
 
 
 class SolpocInterface(tk.Tk):
@@ -595,7 +597,6 @@ class SolpocInterface(tk.Tk):
         # Charge et affiche le contenu du dossier plans_experiences
         self.refresh_summary()
 
-
     def select_template(self, template_name):
 
         self.selected_template = template_name
@@ -652,7 +653,7 @@ class SolpocInterface(tk.Tk):
         # Récupère la liste des paramètres pour ce template
         parameters = self.templates_config[self.selected_template]
 
-        # Création des groupes de parametres 
+        # Création des groupes de parametres
         groups = [
             ["Comment"],
             ["algo", "pop_size", "mutation_DE", "crossover_rate"],
@@ -660,7 +661,7 @@ class SolpocInterface(tk.Tk):
             ["nb_run", "cpu_used", "seed"],
             ["Mat_Stack", "Wl (start, stop, step)", "Ang (°)", "nb_layer"],
             ["selection", "cost_function"],
-            ["n_range (min, max)", "Th_range (min, max)", "Th_Substrate (nm)"]
+            ["n_range (min, max)", "Th_range (min, max)", "Th_Substrate (nm)"],
         ]
 
         # Priority
@@ -712,7 +713,7 @@ class SolpocInterface(tk.Tk):
             scroll_frame.grid_columnconfigure(0, weight=1)
 
             groupe_frame.grid(
-                row = current_row,
+                row=current_row,
                 column=0,
                 columnspan=10,
                 sticky="ew",
@@ -721,15 +722,14 @@ class SolpocInterface(tk.Tk):
             )
 
             for col_index, param_name in enumerate(visibles_param):
-            
                 col = col_index * 3
 
-            # Label du paramètre
+                # Label du paramètre
                 self.create_label(groupe_frame, param_name).grid(
                     row=current_row, column=col, padx=10, pady=8, sticky="w"
                 )
 
-            # Type du paramètre
+                # Type du paramètre
                 param_type = self.param_type.get(param_name, "text")
 
                 # Champ de saisie (spéciaux)
@@ -779,31 +779,26 @@ class SolpocInterface(tk.Tk):
                     entry_max.pack(side="left")
 
                     entry.entries = [entry_min, entry_max]
-                
+
                 elif param_name == "Comment":
                     entry = tk.Entry(groupe_frame, width=150)
 
                 else:
                     entry = tk.Entry(groupe_frame, width=14)
 
-                entry.grid(
-                    row=current_row, 
-                    column=col + 1, 
-                    padx=10, 
-                    pady=8,
-                    sticky="w")
-                
+                entry.grid(row=current_row, column=col + 1, padx=10, pady=8, sticky="w")
+
                 if col_index < len(visibles_param) - 1:
                     separator = tk.Label(
-                    groupe_frame,
-                    text="|",
-                    fg="#777",
-                    bg="black",
-                    font=("Arial", 12, "bold")
+                        groupe_frame,
+                        text="|",
+                        fg="#777",
+                        bg="black",
+                        font=("Arial", 12, "bold"),
                     )
                     separator.grid(
-                        row = current_row,
-                        column= col + 2,
+                        row=current_row,
+                        column=col + 2,
                         padx=8,
                         pady=8,
                         sticky="w",
@@ -830,11 +825,10 @@ class SolpocInterface(tk.Tk):
                             entry.entries[0].insert(0, parts[0])
                             entry.entries[1].insert(0, parts[1])
                     else:
-                            entry.insert(0, default_value)
+                        entry.insert(0, default_value)
 
                 self.parameter_entries[param_name] = entry
             current_row += 1
-
 
         # --- Boutons du bas ---
         bottom_frame = tk.Frame(container, bg="black")
@@ -1426,36 +1420,81 @@ class SolpocInterface(tk.Tk):
         self.create_label(container, "Curve RTA", ("Arial", 18, "bold")).pack(pady=10)
 
         # ========================================================
-        # ZONE INPUTS
+        # LEFT PANEL
         # ========================================================
 
         input_frame = tk.Frame(container, bg="black")
         input_frame.pack(side="left", fill="y", padx=20, pady=20)
 
+        # --------------------------------------------------------
+        # NUMBER OF LAYERS
+        # --------------------------------------------------------
+
+        tk.Label(
+            input_frame,
+            text="Number of layers",
+            bg="black",
+            fg="white",
+            font=("Arial", 11),
+        ).grid(row=0, column=0, sticky="w", pady=8)
+
+        self.nb_layers_var = tk.IntVar(value=4)
+
+        nb_layers_spin = tk.Spinbox(
+            input_frame,
+            from_=1,
+            to=20,
+            textvariable=self.nb_layers_var,
+            width=8,
+            command=self.generate_layer_fields,
+        )
+
+        nb_layers_spin.grid(row=0, column=1, sticky="w", pady=8)
+
+        # ========================================================
+        # FRAME DYNAMIC LAYERS
+        # ========================================================
+
+        self.layers_frame = tk.Frame(input_frame, bg="black")
+        self.layers_frame.grid(row=1, column=0, columnspan=2, pady=10)
+
+        # stockage des champs
+        self.material_entries = []
+        self.thickness_entries = []
+
+        # ========================================================
+        # OTHER PARAMETERS
+        # ========================================================
+
+        other_frame = tk.Frame(input_frame, bg="black")
+        other_frame.grid(row=2, column=0, columnspan=2, pady=20)
+
         self.rta_entries = {}
 
         fields = [
-            ("Mat_Stack", "BK7, Al2O3, Al, air"),
-            ("d_Stack", "1000000, 50, 200, 50"),
             ("Wl (start, stop, step)", "280, 2500, 5"),
             ("Ang", "0"),
         ]
 
         for i, (label, default) in enumerate(fields):
             tk.Label(
-                input_frame, text=label, bg="black", fg="white", font=("Arial", 11)
+                other_frame,
+                text=label,
+                bg="black",
+                fg="white",
+                font=("Arial", 11),
             ).grid(row=i, column=0, sticky="w", pady=8)
 
-            entry = tk.Entry(input_frame, width=30)
+            entry = tk.Entry(other_frame, width=25)
 
             entry.insert(0, default)
 
-            entry.grid(row=i, column=1, pady=8, padx=10)
+            entry.grid(row=i, column=1, padx=10, pady=8)
 
             self.rta_entries[label] = entry
 
         # ========================================================
-        # BOUTON PLOT
+        # BUTTONS
         # ========================================================
 
         tk.Button(
@@ -1465,22 +1504,30 @@ class SolpocInterface(tk.Tk):
             bg="#4CAF50",
             fg="white",
             command=self.compute_rta_curve,
-        ).grid(row=len(fields) + 1, column=0, columnspan=2, pady=20)
+        ).grid(row=3, column=0, columnspan=2, pady=20)
 
         tk.Button(
-            input_frame, text="← Back", width=15, command=self.show_template_view
-        ).grid(row=len(fields) + 2, column=0, sticky="w", pady=20)
+            input_frame,
+            text="← Back",
+            width=15,
+            command=self.show_template_view,
+        ).grid(row=4, column=0, sticky="w", pady=20)
 
         # ========================================================
-        # FRAME GRAPH
+        # RIGHT PANEL
         # ========================================================
 
-        self.graph_frame = tk.Frame(container, bg="white")
-        self.graph_frame.pack(side="right", fill="both", expand=True, padx=20, pady=20)
+        right_frame = tk.Frame(container, bg="black")
+        right_frame.pack(side="right", fill="both", expand=True, padx=20, pady=20)
 
-    # ============================================================
-    # AJOUTER CETTE FONCTION DANS LA CLASSE
-    # ============================================================
+        self.stack_frame = tk.Frame(right_frame, bg="white", height=180)
+        self.stack_frame.pack(fill="x", pady=(0, 10))
+
+        self.graph_frame = tk.Frame(right_frame, bg="white")
+        self.graph_frame.pack(fill="both", expand=True)
+
+        # génération initiale
+        self.generate_layer_fields()
 
     def compute_rta_curve(self):
 
@@ -1489,13 +1536,9 @@ class SolpocInterface(tk.Tk):
             # RECUPERATION INPUTS
             # ====================================================
 
-            mat_stack = [
-                x.strip() for x in self.rta_entries["Mat_Stack"].get().split(",")
-            ]
+            mat_stack = [entry.get().strip() for entry in self.material_entries]
 
-            d_stack = [
-                float(x.strip()) for x in self.rta_entries["d_Stack"].get().split(",")
-            ]
+            d_stack = [float(entry.get().strip()) for entry in self.thickness_entries]
 
             wl_values = [
                 float(x.strip())
@@ -1558,12 +1601,85 @@ class SolpocInterface(tk.Tk):
             for widget in self.graph_frame.winfo_children():
                 widget.destroy()
 
+            for widget in self.stack_frame.winfo_children():
+                widget.destroy()
+
+                # ====================================================
+            # STACK PLOT
             # ====================================================
-            # FIGURE
+
+            stack_fig = Figure(figsize=(7, 2), dpi=100)
+
+            stack_ax = stack_fig.add_subplot(111)
+
+            colors = plt.cm.Set3(np.linspace(0, 1, len(mat_stack)))
+
+            layer_width = 1
+
+            for i, (mat, thickness) in enumerate(zip(mat_stack, d_stack)):
+                rect = Rectangle(
+                    (i * layer_width, 0),
+                    layer_width,
+                    1,
+                    facecolor=colors[i],
+                    edgecolor="black",
+                    linewidth=1.5,
+                )
+
+                stack_ax.add_patch(rect)
+
+                # Nom matériau
+                stack_ax.text(
+                    i * layer_width + 0.5,
+                    0.65,
+                    mat,
+                    ha="center",
+                    va="center",
+                    fontsize=10,
+                    fontweight="bold",
+                )
+
+                # Épaisseur
+                stack_ax.text(
+                    i * layer_width + 0.5,
+                    0.30,
+                    f"{thickness:.0f} nm",
+                    ha="center",
+                    va="center",
+                    fontsize=8,
+                )
+
+            # Limites
+            stack_ax.set_xlim(0, len(mat_stack))
+            stack_ax.set_ylim(0, 1)
+
+            # Nettoyage axes
+            stack_ax.set_xticks([])
+            stack_ax.set_yticks([])
+
+            for spine in stack_ax.spines.values():
+                spine.set_visible(False)
+
+            stack_ax.set_title("Materials Stack", fontsize=14, fontweight="bold")
+
+            # ====================================================
+            # TKINTER CANVAS STACK
+            # ====================================================
+
+            stack_canvas = FigureCanvasTkAgg(
+                stack_fig,
+                master=self.stack_frame,
+            )
+
+            stack_canvas.draw()
+
+            stack_canvas.get_tk_widget().pack(fill="both", expand=True)
+
+            # ====================================================
+            # FIGURE RTA
             # ====================================================
 
             fig = Figure(figsize=(7, 5), dpi=100)
-
             ax = fig.add_subplot(111)
 
             ax.plot(Wl, R, label="Reflectance")
@@ -1576,7 +1692,6 @@ class SolpocInterface(tk.Tk):
             ax.set_ylim(0, 1)
 
             ax.legend()
-
             ax.grid(True)
 
             # ====================================================
@@ -1584,13 +1699,155 @@ class SolpocInterface(tk.Tk):
             # ====================================================
 
             canvas = FigureCanvasTkAgg(fig, master=self.graph_frame)
-
             canvas.draw()
-
             canvas.get_tk_widget().pack(fill="both", expand=True)
 
         except Exception as e:
             messagebox.showerror("RTA Error", str(e))
+
+    def generate_layer_fields(self):
+
+        # clear ancien contenu
+        for widget in self.layers_frame.winfo_children():
+            widget.destroy()
+
+        self.material_entries = []
+        self.thickness_entries = []
+
+        nb_layers = self.nb_layers_var.get()
+
+        # ========================================================
+        # HEADERS
+        # ========================================================
+
+        tk.Label(
+            self.layers_frame,
+            text="Material",
+            bg="black",
+            fg="white",
+            font=("Arial", 10, "bold"),
+        ).grid(row=0, column=0, padx=10)
+
+        tk.Label(
+            self.layers_frame,
+            text="Thickness (nm)",
+            bg="black",
+            fg="white",
+            font=("Arial", 10, "bold"),
+        ).grid(row=0, column=1, padx=10)
+
+        # ========================================================
+        # DYNAMIC FIELDS
+        # ========================================================
+
+        default_materials = ["BK7", "Al2O3", "Al", "air"]
+
+        default_thickness = [1000000, 50, 200, 50]
+
+        for i in range(nb_layers):
+            # matériau
+            mat_entry = tk.Entry(self.layers_frame, width=18)
+
+            if i < len(default_materials):
+                mat_entry.insert(0, default_materials[i])
+
+            mat_entry.grid(row=i + 1, column=0, padx=10, pady=4)
+
+            # épaisseur
+            thick_entry = tk.Entry(self.layers_frame, width=12)
+
+            if i < len(default_thickness):
+                thick_entry.insert(0, str(default_thickness[i]))
+
+            thick_entry.grid(row=i + 1, column=1, padx=10, pady=4)
+
+            # update auto stack plot
+            mat_entry.bind("<KeyRelease>", lambda e: self.update_stack_plot())
+            thick_entry.bind("<KeyRelease>", lambda e: self.update_stack_plot())
+
+            self.material_entries.append(mat_entry)
+            self.thickness_entries.append(thick_entry)
+
+        self.update_stack_plot()
+
+    def update_stack_plot(self):
+
+        for widget in self.stack_frame.winfo_children():
+            widget.destroy()
+
+        try:
+            mat_stack = [entry.get().strip() for entry in self.material_entries]
+
+            d_stack = [
+                float(entry.get().strip()) if entry.get().strip() != "" else 0
+                for entry in self.thickness_entries
+            ]
+
+            stack_fig = Figure(figsize=(7, 2), dpi=100)
+
+            stack_ax = stack_fig.add_subplot(111)
+
+            colors = plt.cm.Set3(np.linspace(0, 1, len(mat_stack)))
+
+            layer_width = 1
+
+            for i, (mat, thickness) in enumerate(zip(mat_stack, d_stack)):
+                rect = Rectangle(
+                    (i * layer_width, 0),
+                    layer_width,
+                    1,
+                    facecolor=colors[i],
+                    edgecolor="black",
+                    linewidth=1.5,
+                )
+
+                stack_ax.add_patch(rect)
+
+                stack_ax.text(
+                    i * layer_width + 0.5,
+                    0.65,
+                    mat,
+                    ha="center",
+                    va="center",
+                    fontsize=10,
+                    fontweight="bold",
+                )
+
+                stack_ax.text(
+                    i * layer_width + 0.5,
+                    0.30,
+                    f"{thickness:.0f} nm",
+                    ha="center",
+                    va="center",
+                    fontsize=8,
+                )
+
+            stack_ax.set_xlim(0, len(mat_stack))
+            stack_ax.set_ylim(0, 1)
+
+            stack_ax.set_xticks([])
+            stack_ax.set_yticks([])
+
+            for spine in stack_ax.spines.values():
+                spine.set_visible(False)
+
+            stack_ax.set_title(
+                "Materials Stack",
+                fontsize=14,
+                fontweight="bold",
+            )
+
+            stack_canvas = FigureCanvasTkAgg(
+                stack_fig,
+                master=self.stack_frame,
+            )
+
+            stack_canvas.draw()
+
+            stack_canvas.get_tk_widget().pack(fill="both", expand=True)
+
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":
