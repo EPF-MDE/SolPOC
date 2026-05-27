@@ -1497,6 +1497,15 @@ class SolpocInterface(tk.Tk):
         # BUTTONS
         # ========================================================
 
+        self.coherency_limit_var = tk.IntVar(value=2000)
+
+        tk.Button(
+            input_frame,
+            text="Advanced Options",
+            width=20,
+            command=self.show_advanced_options,
+        ).grid(row=3, column=0, columnspan=2, pady=10)
+
         tk.Button(
             input_frame,
             text="Plot RTA",
@@ -1504,14 +1513,14 @@ class SolpocInterface(tk.Tk):
             bg="#4CAF50",
             fg="white",
             command=self.compute_rta_curve,
-        ).grid(row=3, column=0, columnspan=2, pady=20)
+        ).grid(row=4, column=0, columnspan=2, pady=20)
 
         tk.Button(
             input_frame,
             text="← Back",
             width=15,
             command=self.show_template_view,
-        ).grid(row=4, column=0, sticky="w", pady=20)
+        ).grid(row=5, column=0, sticky="w", pady=20)
 
         # ========================================================
         # RIGHT PANEL
@@ -1585,7 +1594,7 @@ class SolpocInterface(tk.Tk):
                 Sol_Spec=Sol_Spec,
                 n_Stack=n_Stack,
                 k_Stack=k_Stack,
-                coherency_limit=2000,
+                coherency_limit=self.coherency_limit_var.get(),
             )
 
             # ====================================================
@@ -1616,7 +1625,11 @@ class SolpocInterface(tk.Tk):
 
             layer_width = 1
 
+            coherency_limit = self.coherency_limit_var.get()
+
             for i, (mat, thickness) in enumerate(zip(mat_stack, d_stack)):
+                is_incoherent = thickness > coherency_limit
+
                 rect = Rectangle(
                     (i * layer_width, 0),
                     layer_width,
@@ -1624,6 +1637,7 @@ class SolpocInterface(tk.Tk):
                     facecolor=colors[i],
                     edgecolor="black",
                     linewidth=1.5,
+                    hatch="////" if is_incoherent else "",
                 )
 
                 stack_ax.add_patch(rect)
@@ -1660,7 +1674,11 @@ class SolpocInterface(tk.Tk):
             for spine in stack_ax.spines.values():
                 spine.set_visible(False)
 
-            stack_ax.set_title("Materials Stack", fontsize=14, fontweight="bold")
+            stack_ax.set_title(
+                f"Materials Stack  (incoherent if > {coherency_limit} nm)",
+                fontsize=14,
+                fontweight="bold",
+            )
 
             # ====================================================
             # TKINTER CANVAS STACK
@@ -1704,6 +1722,38 @@ class SolpocInterface(tk.Tk):
 
         except Exception as e:
             messagebox.showerror("RTA Error", str(e))
+
+    def show_advanced_options(self):
+
+        window = tk.Toplevel(self)
+
+        window.title("Advanced Options")
+
+        window.geometry("300x120")
+
+        window.configure(bg="black")
+
+        tk.Label(
+            window,
+            text="Coherency Limit",
+            bg="black",
+            fg="white",
+            font=("Arial", 11),
+        ).pack(pady=(20, 5))
+
+        entry = tk.Entry(
+            window,
+            textvariable=self.coherency_limit_var,
+            width=15,
+        )
+
+        entry.pack(pady=5)
+
+        tk.Button(
+            window,
+            text="Save",
+            command=lambda: [self.update_stack_plot(), window.destroy()],
+        ).pack(pady=15)
 
     def generate_layer_fields(self):
 
@@ -1791,7 +1841,11 @@ class SolpocInterface(tk.Tk):
 
             layer_width = 1
 
+            coherency_limit = self.coherency_limit_var.get()
+
             for i, (mat, thickness) in enumerate(zip(mat_stack, d_stack)):
+                is_incoherent = thickness > coherency_limit
+
                 rect = Rectangle(
                     (i * layer_width, 0),
                     layer_width,
@@ -1799,8 +1853,8 @@ class SolpocInterface(tk.Tk):
                     facecolor=colors[i],
                     edgecolor="black",
                     linewidth=1.5,
+                    hatch="////" if is_incoherent else "",
                 )
-
                 stack_ax.add_patch(rect)
 
                 stack_ax.text(
