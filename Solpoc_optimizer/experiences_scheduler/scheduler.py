@@ -25,6 +25,34 @@ from tests.hachage_test import (
     register_executed_plan,
     is_already_executed,
 )
+"""
+
+
+"""
+
+
+"""
+SolPOC v 0.9.7
+@authors: De Mongolfier.Guillaume, Gharbi Yassine
+contact : yassine.gharbi@epfedu.fr et guillaume.demontgolfier@epfedu.fr
+
+Other contributors:
+    - ``Stack_plot`` function by Titouan Fevrier
+    - Numpy-style formatted docstrings for automatic sphinx doc generation by Titouan Fevrier
+
+Description:
+    This script implements an experience scheduler for the SolPOC project. It reads experiment plans from JSON files, checks for duplicates using hashing, executes the experiments in parallel, and organizes results with detailed logging and visualization.
+
+Usage:
+    1. Place JSON experiment plans in the `plan_experience` directory.
+    2. Run this script to execute the experiments. Results will be saved in the `runs` directory, organized by timestamp and priority.
+    3. The script automatically handles duplicates, errors, and generates comprehensive reports and plots for each experiment.
+Launch : 
+    to start the scheduler make sure to be in the root of the repository and run:
+
+        python -m Solpoc_optimizer.experiences_scheduler.projet_final
+"""
+
 
 
 try:
