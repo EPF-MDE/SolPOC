@@ -1,6 +1,6 @@
 import json
 import hashlib
-import os
+from pathlib import Path
 
 
 # Clés ignorées car elles ne font pas partie du contenu scientifique du plan
@@ -32,45 +32,55 @@ def hash_plan(plan_dict: dict) -> str:
 # Gestion du cache hashes.json
 # ---------------------------------------------------------------------------
 
-# _HASHES_FILE = os.path.join("plan_executer", "hashes.json")
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-_HASHES_FILE = os.path.join(
-    BASE_DIR,
-    "..",
-    "experiences_scheduler",
-    "plan_executer",
-    "hashes.json",
+# Valeur par défaut (pour compatibilité rétroactive)
+_DEFAULT_HASHES_FILE = (
+    Path(__file__).resolve().parent.parent
+    / "experiences_scheduler"
+    / "plan_executer"
+    / "hashes.json"
 )
 
 
-def load_hashes_db() -> dict:
+def load_hashes_db(hashes_file: Path | str = None) -> dict:
     """
-    Charge le cache des hashes depuis plan_executer/hashes.json.
+    Charge le cache des hashes depuis le fichier spécifié.
+
+    Args:
+        hashes_file: Chemin vers le fichier hashes.json.
+                     Si None, utilise le chemin par défaut.
 
     Returns:
         Dictionnaire { hash: filename } des plans déjà exécutés.
         Renvoie un dict vide si le fichier n'existe pas encore.
     """
-    if not os.path.exists(_HASHES_FILE):
+    if hashes_file is None:
+        hashes_file = _DEFAULT_HASHES_FILE
+
+    hashes_file = Path(hashes_file)
+
+    if not hashes_file.exists():
         return {}
 
-    with open(_HASHES_FILE, "r", encoding="utf-8") as f:
+    with open(hashes_file, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
-def save_hashes_db(hashes_db: dict) -> None:
+def save_hashes_db(hashes_db: dict, hashes_file: Path | str = None) -> None:
     """
-    Sauvegarde le cache des hashes dans plan_executer/hashes.json.
+    Sauvegarde le cache des hashes dans le fichier spécifié.
 
     Args:
         hashes_db: Dictionnaire { hash: filename } à persister.
+        hashes_file: Chemin vers le fichier hashes.json.
+                     Si None, utilise le chemin par défaut.
     """
+    if hashes_file is None:
+        hashes_file = _DEFAULT_HASHES_FILE
 
-    os.makedirs(os.path.dirname(_HASHES_FILE), exist_ok=True)
+    hashes_file = Path(hashes_file)
+    hashes_file.parent.mkdir(parents=True, exist_ok=True)
 
-    with open(_HASHES_FILE, "w", encoding="utf-8") as f:
+    with open(hashes_file, "w", encoding="utf-8") as f:
         json.dump(hashes_db, f, indent=2, ensure_ascii=False)
 
 
@@ -88,7 +98,9 @@ def is_already_executed(plan_hash: str, hashes_db: dict) -> bool:
     return plan_hash in hashes_db
 
 
-def register_executed_plan(plan_hash: str, filename: str, hashes_db: dict) -> None:
+def register_executed_plan(
+    plan_hash: str, filename: str, hashes_db: dict, hashes_file: Path | str = None
+) -> None:
     """
     Enregistre un plan comme exécuté dans le cache (en mémoire + sur disque).
 
@@ -96,9 +108,8 @@ def register_executed_plan(plan_hash: str, filename: str, hashes_db: dict) -> No
         plan_hash: Le hash MD5 du plan.
         filename: Le nom du fichier JSON correspondant.
         hashes_db: Le cache en mémoire (modifié en place).
+        hashes_file: Chemin vers le fichier hashes.json.
+                     Si None, utilise le chemin par défaut.
     """
     hashes_db[plan_hash] = filename
-    save_hashes_db(hashes_db)
-
-
-
+    save_hashes_db(hashes_db, hashes_file)

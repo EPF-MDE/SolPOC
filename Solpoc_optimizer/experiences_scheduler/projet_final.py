@@ -5,6 +5,7 @@ matplotlib.use("Agg")  # Backend non-interactif (pas d'affichage)
 import matplotlib.pyplot as plt
 import time
 import os
+from pathlib import Path
 import solpoc as sol
 
 
@@ -17,16 +18,7 @@ import sys
 
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-# # Ajouter le dossier contenant les fonctions custom
-# sys.path.append(
-#     os.path.abspath(
-#         os.path.join(
-#             os.path.dirname(__file__),
-#             "..",
-#             "test_functions",
-#         )
-#     )
-# )
+
 from tests.hachage_test import (
     hash_plan,
     load_hashes_db,
@@ -34,45 +26,6 @@ from tests.hachage_test import (
     is_already_executed,
 )
 
-# CUSTOM_MODULE_AVAILABLE = False
-
-# try:
-#     importlib.import_module("function_R_s_weighted")
-#     CUSTOM_MODULE_AVAILABLE = True
-
-# except ImportError:
-#     print(
-#         "WARNING: function_R_s_weighted module not found. Falling back to sol module."
-#     )
-
-
-# def get_from_modules(
-#     name,
-#     module_name="function_R_s_weighted",
-# ):
-
-#     # Try custom module only if available
-#     if CUSTOM_MODULE_AVAILABLE:
-#         custom_module = importlib.import_module(module_name)
-
-#         if hasattr(custom_module, name):
-#             print(f"Using custom function '{name}' from module '{module_name}'.")
-
-#             return getattr(custom_module, name)
-
-#         else:
-#             print(
-#                 f"WARNING: '{name}' not found "
-#                 f"in custom module '{module_name}'. "
-#                 f"Falling back to SolPOC."
-#             )
-
-#     # Fallback SolPOC
-#     if hasattr(sol, name):
-#         return getattr(sol, name)
-
-#     # Final error
-#     raise AttributeError(f"'{name}' not found in '{module_name}' or solpoc.")
 
 try:
     import function_R_s_weighted as test
@@ -314,19 +267,24 @@ if __name__ == "__main__":
     running = True
     launch_time_global = datetime.now().strftime("%Y-%m-%d_%Hh%Mm%Ss")
 
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    PLAN_EXPERIENCE_DIR = os.path.join(BASE_DIR, "plan_experience")
-    PLAN_EXECUTER_DIR = os.path.join(BASE_DIR, "plan_executer")
-    PLAN_FAILED_DIR = os.path.join(BASE_DIR, "plan_failed")
-    RUNS_DIR = os.path.join(BASE_DIR, "runs")
+    # ────────────────────────────────────────────────────────────────────────
+    # Définir les chemins une fois pour toutes, relatifs à ce script
+    # ────────────────────────────────────────────────────────────────────────
+    BASE_DIR = Path(__file__).resolve().parent
 
-    os.makedirs(PLAN_EXPERIENCE_DIR, exist_ok=True)
-    os.makedirs(PLAN_FAILED_DIR, exist_ok=True)
-    os.makedirs(PLAN_EXECUTER_DIR, exist_ok=True)
-    os.makedirs(RUNS_DIR, exist_ok=True)
+    PLAN_EXPERIENCE_DIR = BASE_DIR / "plan_experience"
+    PLAN_EXECUTER_DIR = BASE_DIR / "plan_executer"
+    PLAN_FAILED_DIR = BASE_DIR / "plan_failed"
+    RUNS_DIR = BASE_DIR / "runs"
+    HASH_FILE = PLAN_EXECUTER_DIR / "hashes.json"
+
+    PLAN_EXPERIENCE_DIR.mkdir(exist_ok=True)
+    PLAN_FAILED_DIR.mkdir(exist_ok=True)
+    PLAN_EXECUTER_DIR.mkdir(exist_ok=True)
+    RUNS_DIR.mkdir(exist_ok=True)
 
     # ── POINT 1 : charger le cache des hashes au démarrage ──────────────────
-    hashes_db = load_hashes_db() or {}
+    hashes_db = load_hashes_db(HASH_FILE) or {}
     """
     if hashes_db:
         print(f"Cache chargé : {len(hashes_db)} experience(s) déjà exécutée(s).")
@@ -338,10 +296,10 @@ if __name__ == "__main__":
             """
     # ────────────────────────────────────────────────────────────────────────
 
-    plan_files = [f for f in os.listdir(PLAN_EXPERIENCE_DIR) if f.endswith(".json")]
+    plan_files = [f.name for f in PLAN_EXPERIENCE_DIR.glob("*.json")]
     plans = []
     for f in plan_files:
-        with open(os.path.join(PLAN_EXPERIENCE_DIR, f), "r", encoding="utf-8") as file:
+        with open(PLAN_EXPERIENCE_DIR / f, "r", encoding="utf-8") as file:
             plan = json.load(file)
             plan["filename"] = f
             filename_without_ext = f.replace(".json", "")
@@ -378,9 +336,8 @@ if __name__ == "__main__":
                 f"'{already_filename}' déjà exécutée (hash: {plan_hash[:8]}…)."
             )
             # Déplacer quand même vers plan_executer pour ne pas le relancer
-            os.rename(
-                os.path.join(PLAN_EXPERIENCE_DIR, first_min_row["filename"]),
-                os.path.join(PLAN_EXECUTER_DIR, first_min_row["filename"]),
+            (PLAN_EXPERIENCE_DIR / first_min_row["filename"]).rename(
+                PLAN_EXECUTER_DIR / first_min_row["filename"]
             )
             continue
         # ────────────────────────────────────────────────────────────────────
@@ -476,20 +433,18 @@ if __name__ == "__main__":
             cpu_used = 4
 
         # dossier global pour tous les resultats
-        global_run_dir = os.path.join(RUNS_DIR, launch_time_global)
-        os.makedirs(global_run_dir, exist_ok=True)
+        global_run_dir = RUNS_DIR / launch_time_global
+        global_run_dir.mkdir(exist_ok=True)
 
         # Capturer l'heure de résultat de ce plan d'expérience spécifique
         result_time = datetime.now().strftime("%Hh%Mm%Ss")
 
         # Dossier spécifique à cette expérience
         priority = first_min_row.get("priority", "unknown")
-        directory = os.path.join(
-            global_run_dir, f"{template_name}_{result_time}_{priority}"
-        )
-        os.makedirs(directory, exist_ok=True)
+        directory = global_run_dir / f"{template_name}_{result_time}_{priority}"
+        directory.mkdir(exist_ok=True)
 
-        parameters["directory"] = directory
+        parameters["directory"] = str(directory)
         parameters["dawn_of_time"] = time.time()
 
         # Exécuter le main pour cette ligne
@@ -506,13 +461,14 @@ if __name__ == "__main__":
                 selection=selection,
             )
             # Si réussi, déplacer vers plan_executer
-            os.rename(
-                os.path.join(PLAN_EXPERIENCE_DIR, first_min_row["filename"]),
-                os.path.join(PLAN_EXECUTER_DIR, first_min_row["filename"]),
+            (PLAN_EXPERIENCE_DIR / first_min_row["filename"]).rename(
+                PLAN_EXECUTER_DIR / first_min_row["filename"]
             )
 
             # ── POINT 3 : enregistrer le hash après succès ───────────────────
-            register_executed_plan(plan_hash, first_min_row["filename"], hashes_db)
+            register_executed_plan(
+                plan_hash, first_min_row["filename"], hashes_db, HASH_FILE
+            )
             print(
                 f"[HASH] Plan '{first_min_row['filename']}' enregistré (hash: {plan_hash[:8]}…)."
             )
@@ -523,9 +479,8 @@ if __name__ == "__main__":
                 f"An error occurred while processing {first_min_row['filename']}: {e}"
             )
             # Déplacer le plan échoué vers plan_failed avec préfixe
-            os.rename(
-                os.path.join(PLAN_EXPERIENCE_DIR, first_min_row["filename"]),
-                os.path.join(PLAN_FAILED_DIR, first_min_row["filename"]),
+            (PLAN_EXPERIENCE_DIR / first_min_row["filename"]).rename(
+                PLAN_FAILED_DIR / first_min_row["filename"]
             )
             continue  # Passer au suivant
 
@@ -533,31 +488,33 @@ if __name__ == "__main__":
     plt.close("all")
 
     # Supprimer les dossiers vides créés en dehors de runs
-    for item in os.listdir("."):
+    for item in BASE_DIR.iterdir():
         if (
-            os.path.isdir(item)
-            and not item.startswith("runs")
-            and item.startswith("2026-")
-            and item
+            item.is_dir()
+            and not item.name.startswith("runs")
+            and item.name.startswith("2026-")
+            and item.name
             not in [
-                os.path.basename(PLAN_EXPERIENCE_DIR),
-                os.path.basename(PLAN_EXECUTER_DIR),
-                os.path.basename(PLAN_FAILED_DIR),
+                PLAN_EXPERIENCE_DIR.name,
+                PLAN_EXECUTER_DIR.name,
+                PLAN_FAILED_DIR.name,
             ]
         ):
             try:
-                os.rmdir(item)  # Supprime seulement si vide
-                # print(f"Dossier vide supprimé : {item}")
+                item.rmdir()  # Supprime seulement si vide
+                # print(f"Dossier vide supprimé : {item.name}")
             except OSError:
                 pass  # Pas vide, on passe
 
     # Supprimer les dossiers vides à l'intérieur de runs
-    if os.path.isdir("runs"):
-        for root, dirs, files in os.walk("runs", topdown=False):
-            if not dirs and not files:
+    if RUNS_DIR.exists():
+        for item in sorted(
+            RUNS_DIR.rglob("*"), key=lambda x: len(x.parts), reverse=True
+        ):
+            if item.is_dir() and not any(item.iterdir()):
                 try:
-                    os.rmdir(root)
-                    print(f"Dossier vide supprimé dans runs : {root}")
+                    item.rmdir()
+                    print(f"Dossier vide supprimé dans runs : {item}")
                 except OSError:
                     pass  # Pas vide ou impossible à supprimer
 
