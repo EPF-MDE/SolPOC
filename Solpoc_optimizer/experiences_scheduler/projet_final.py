@@ -272,6 +272,10 @@ if __name__ == "__main__":
     # ────────────────────────────────────────────────────────────────────────
     BASE_DIR = Path(__file__).resolve().parent
 
+    PROJECT_ROOT = BASE_DIR.parents[1]
+
+    print(f"PROJECT_ROOT : {PROJECT_ROOT}")
+
     PLAN_EXPERIENCE_DIR = BASE_DIR / "plan_experience"
     PLAN_EXECUTER_DIR = BASE_DIR / "plan_executer"
     PLAN_FAILED_DIR = BASE_DIR / "plan_failed"
@@ -488,7 +492,8 @@ if __name__ == "__main__":
     plt.close("all")
 
     # Supprimer les dossiers vides créés en dehors de runs
-    for item in BASE_DIR.iterdir():
+    print(f"BASE_DIR : {BASE_DIR}")
+    for item in PROJECT_ROOT.iterdir():
         if (
             item.is_dir()
             and not item.name.startswith("runs")
