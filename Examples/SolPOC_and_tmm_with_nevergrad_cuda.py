@@ -11,6 +11,8 @@ import time
 from solpoc import open_SolSpec, RTA, SolarProperties
 from tmm_fast.vectorized_tmm_dispersive_multistack import coh_vec_tmm_disp_mstack as tmm
 import nevergrad as ng
+import torch
+
 
 
 def DBR_solar_tmm(d_Stack):
@@ -80,8 +82,8 @@ def DBR_solar_tmm(d_Stack):
     # In TMM-fast, the transmission must be computed separately for each polarization.
     # Here we compute 's' and 'p' polarizations individually and then average them
     # to get the total spectral transmittance.
-    O_s = tmm("s", M, T, theta, wl, device="cpu")
-    O_p = tmm("p", M, T, theta, wl, device="cpu")
+    O_s = tmm("s", M, T, theta, wl, device="cuda")
+    O_p = tmm("p", M, T, theta, wl, device="cuda")
     T_spec = (O_s["T"] + O_p["T"]) / 2
     # We aim to maximize the reflectance of the stack.
     # Since the optimizer minimizes a cost function, we define the cost as the solar-weighted transmittance.
@@ -208,20 +210,27 @@ print("Value of cost function for tmm:", DBR_solar_tmm(recommendation.value[0][0
 print("Solution (Thin layers thicknesses, in nm) for tmm ", recommendation.value[0][0])
 
 
-# benchmark tmm cpu
-print("=== Benchmark TMM CPU ===")
+# benchmark tmm gpu
+
+
+print("=== Benchmark TMM GPU ===")
 
 test_stack = np.random.uniform(0, 300, size=40)
 
 N = 1000
+
+if torch.cuda.is_available():
+    torch.cuda.synchronize()
 
 t0 = time.time()
 
 for _ in range(N):
     DBR_solar_tmm(test_stack)
 
-print(f"{N} evaluations : {time.time()-t0:.3f} s")
+if torch.cuda.is_available():
+    torch.cuda.synchronize()
 
+print(f"{N} evaluations : {time.time()-t0:.3f} s")
 
 
 # run nevergrad
