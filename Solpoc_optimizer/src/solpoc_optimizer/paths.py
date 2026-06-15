@@ -1,58 +1,69 @@
+from __future__ import annotations
+
+import os
 from pathlib import Path
 
 
 # ---------------------------------------------------------
-# RACINES DU PROJET
+# DOSSIERS DU PACKAGE INSTALLÉ
 # ---------------------------------------------------------
 
-# Dossier Solpoc_optimizer/
-OPTIMIZER_DIR = Path(__file__).resolve().parent
+# Dossier src/solpoc_optimizer/
+PACKAGE_DIR = Path(__file__).resolve().parent
 
-# Racine générale du dépôt SolPOC/
-PROJECT_ROOT = OPTIMIZER_DIR.parent
+# Ressources faisant partie du package
+INTERFACE_DIR = PACKAGE_DIR / "interface"
+MANUAL_PLANS_DIR = INTERFACE_DIR / "manual_interface"
+NEW_FUNCTIONS_DIR = PACKAGE_DIR / "new_functions"
 
 
 # ---------------------------------------------------------
-# SCHEDULER
+# DOSSIER DE TRAVAIL DE L'UTILISATEUR
 # ---------------------------------------------------------
 
-SCHEDULER_DIR = OPTIMIZER_DIR / "experiences_scheduler"
 
-# Plans qui attendent d'être exécutés
-PLAN_EXPERIENCE_DIR = SCHEDULER_DIR / "plan_experience"
+def get_workspace_dir() -> Path:
+    """
+    Retourne le dossier de travail de SolPOC Optimizer.
 
-# Plans correctement exécutés
-PLAN_EXECUTED_DIR = SCHEDULER_DIR / "plan_executer"
+    L'utilisateur peut choisir un emplacement personnalisé avec
+    la variable d'environnement SOLPOC_OPTIMIZER_HOME.
+    """
 
-# Plans ayant échoué
-PLAN_FAILED_DIR = SCHEDULER_DIR / "plan_failed"
+    custom_workspace = os.getenv("SOLPOC_OPTIMIZER_HOME")
 
-# Résultats des expériences
-RUNS_DIR = SCHEDULER_DIR / "runs"
+    if custom_workspace:
+        return Path(custom_workspace).expanduser().resolve()
 
-# Base de données des hashes
+    # Emplacement utilisé par défaut après installation
+    return Path.home() / "SolPOC_Optimizer"
+
+
+WORKSPACE_DIR = get_workspace_dir()
+
+
+# ---------------------------------------------------------
+# DOSSIERS D'EXÉCUTION
+# ---------------------------------------------------------
+
+# Plans en attente
+PLAN_EXPERIENCE_DIR = WORKSPACE_DIR / "plan_experience"
+
+# Plans exécutés
+PLAN_EXECUTED_DIR = WORKSPACE_DIR / "plan_executer"
+
+# Plans échoués
+PLAN_FAILED_DIR = WORKSPACE_DIR / "plan_failed"
+
+# Résultats générés
+RUNS_DIR = WORKSPACE_DIR / "runs"
+
+# Base des hashes
 HASHES_FILE = PLAN_EXECUTED_DIR / "hashes.json"
 
 
 # ---------------------------------------------------------
-# INTERFACE
-# ---------------------------------------------------------
-
-INTERFACE_DIR = OPTIMIZER_DIR / "Interface"
-
-# Fichiers Python utilisés pour préremplir l'interface
-MANUAL_PLANS_DIR = INTERFACE_DIR / "Manual_Interface"
-
-
-# ---------------------------------------------------------
-# FONCTIONS PERSONNALISÉES
-# ---------------------------------------------------------
-
-NEW_FUNCTIONS_DIR = OPTIMIZER_DIR / "new_functions"
-
-
-# ---------------------------------------------------------
-# CRÉATION DES DOSSIERS NÉCESSAIRES
+# CRÉATION DES DOSSIERS
 # ---------------------------------------------------------
 
 
@@ -67,4 +78,7 @@ def create_project_directories() -> None:
     ]
 
     for directory in directories:
-        directory.mkdir(parents=True, exist_ok=True)
+        directory.mkdir(
+            parents=True,
+            exist_ok=True,
+        )

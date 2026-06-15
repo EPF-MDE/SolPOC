@@ -14,6 +14,9 @@ from multiprocessing import Pool
 import json
 import ast
 import sys
+
+from contextlib import contextmanager
+from pathlib import Path
 # import importlib
 
 
@@ -21,7 +24,7 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
-from tests.hachage_test import (
+from solpoc_optimizer.hashing import (
     hash_plan,
     load_hashes_db,
     register_executed_plan,
@@ -29,8 +32,8 @@ from tests.hachage_test import (
 )
 
 
-from Solpoc_optimizer.paths import (
-    SCHEDULER_DIR,
+from solpoc_optimizer.paths import (
+    WORKSPACE_DIR,
     PLAN_EXPERIENCE_DIR,
     PLAN_EXECUTED_DIR,
     PLAN_FAILED_DIR,
@@ -69,7 +72,7 @@ Launch :
 
 
 try:
-    from Solpoc_optimizer.new_functions import function_R_s_weighted as test
+    from solpoc_optimizer.new_functions import function_R_s_weighted as test
 except ImportError as error:
     print(
         "WARNING: function_R_s_weighted module not found. "
@@ -165,6 +168,28 @@ class NumpyEncoder(json.JSONEncoder):
         return super().default(obj)
 
 
+@contextmanager
+def working_directory(directory: Path):
+    """
+    Change temporairement le dossier courant,
+    puis revient au dossier initial.
+    """
+
+    previous_directory = Path.cwd()
+
+    directory.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    os.chdir(directory)
+
+    try:
+        yield
+    finally:
+        os.chdir(previous_directory)
+
+
 def main_for_parameters(
     parameters,
     nb_run,
@@ -177,7 +202,8 @@ def main_for_parameters(
     selection,
 ):
     directory = parameters["directory"]
-    sol.run_main(parameters)
+    with working_directory(WORKSPACE_DIR):
+        sol.run_main(parameters)
 
     mp_pool = Pool(cpu_used)
     tasks = [(i, parameters, algo, cost_function, selection) for i in range(nb_run)]
@@ -426,10 +452,10 @@ def remove_empty_solpoc_directories() -> None:
     directement dans experiences_scheduler.
     """
 
-    if not SCHEDULER_DIR.exists():
+    if not WORKSPACE_DIR.exists():
         return
 
-    for item in SCHEDULER_DIR.iterdir():
+    for item in WORKSPACE_DIR.iterdir():
         if not item.is_dir():
             continue
 
@@ -449,7 +475,8 @@ def remove_empty_solpoc_directories() -> None:
 
 # ---------------------------------------------------------------------------
 
-if __name__ == "__main__":
+
+def main() -> int:
     create_project_directories()
     remove_empty_run_directories()
     remove_empty_solpoc_directories()
@@ -678,6 +705,17 @@ if __name__ == "__main__":
     # Nettoyage après la fin de toutes les expériences
     remove_empty_run_directories()
     remove_empty_solpoc_directories()
+
+    return 0
+
+
+# ---------------------------------------------------------------------------
+
+if __name__ == "__main__":
+    from multiprocessing import freeze_support
+
+    freeze_support()
+    raise SystemExit(main())
 """
 if RUNS_DIR.exists():
     for item in RUNS_DIR.iterdir():
