@@ -384,84 +384,6 @@ def _run_bragg_flow(parameters, directory, nb_run, algo, cost_function, selectio
         print(f"[WARN] Stack plot : {e}")
 
 
-def _run_optimization_with_materials_flow(
-    parameters, directory, algo, cost_function, selection
-):
-    Mat_Option = parameters.get("Mat_Option", [])
-    Mat_Stack_original = list(parameters.get("Mat_Stack", []))
-
-    # ── Première optimisation ────────────────────────────────────────────────
-    t1 = time.time()
-    best_solution, dev, n_iter, seed = algo(cost_function, selection, parameters)
-    t2 = time.time()
-    print(f"Première optimisation terminée en {t2 - t1:.2f}s")
-
-    best_solution = np.array(best_solution)
-    d_Stack, x = (
-        best_solution[: -len(Mat_Stack_original)],
-        best_solution[-len(Mat_Stack_original) :],
-    )
-
-    Rs, Ts, As = sol.evaluate_RTA_s(best_solution, parameters)
-    print(f"Réflectance solaire après 1ère optim : {Rs:.4f}")
-
-    try:
-        sol.print_material_probabilities(
-            Mat_Stack_original,
-            x,
-            Mat_Option,
-            parameters,
-            n_trials=1000,
-        )
-    except Exception as e:
-        print(f"[WARN] print_material_probabilities : {e}")
-
-    # ── Deuxièmes optimisations ──────────────────────────────────────────────
-    nb_2_optim = parameters.get("nb_2_optim", 5)
-    tab_results = []
-
-    t1 = time.time()
-    for i in range(nb_2_optim):
-        print(f"Lancement 2e optimisation : {i + 1}/{nb_2_optim}")
-
-        current_stack = sol.fill_material_stack(
-            Mat_Stack_original,
-            x,
-            Mat_Option,
-            parameters,
-        )
-        parameters["Mat_Stack"] = current_stack
-
-        best_solution_2, dev2, n_iter2, seed2 = algo(
-            cost_function, selection, parameters
-        )
-        best_solution_2 = np.array(best_solution_2)
-
-        Rs2, Ts2, As2 = sol.evaluate_RTA_s(best_solution_2, parameters)
-        print(f"  → Rs = {Rs2:.4f}")
-
-        tab_results.append((Rs2, best_solution_2, current_stack))
-
-    t2 = time.time()
-    print(f"Deuxième optimisations terminées en {t2 - t1:.2f}s")
-
-    # ── Meilleure solution ───────────────────────────────────────────────────
-    best_Rs, best_sol, best_stack = max(tab_results, key=lambda item: item[0])
-    d_Stack_best = best_sol
-
-    # Affiche les résultats de la meilleure solution
-    d_Stack_best, x_best = (
-        best_sol[: -len(Mat_Stack_original)],
-        best_sol[-len(Mat_Stack_original) :],
-    )
-
-    print("\n--- BEST SOLUTION AFTER SECOND OPTIMIZATION ---")
-    print("The time of part two is: ", "{:.2f}".format(t2 - t1), "seconds")
-    print("Material stack used:", best_stack)
-    print("Best thin layer stack, in nm :", [f"{val:.1f} nm" for val in d_Stack_best])
-    print(f"Solar reflectance : {best_Rs:.4f}")
-
-
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
@@ -662,11 +584,6 @@ if __name__ == "__main__":
                 print("#" * 1000)
                 _run_bragg_flow(
                     parameters, str(directory), nb_run, algo, cost_function, selection
-                )
-            elif ("optim" in t_lower) or (first_min_row.get("Mat_Option") is not None):
-                print("=" * 1000)
-                _run_optimization_with_materials_flow(
-                    parameters, str(directory), algo, cost_function, selection
                 )
             else:
                 main_for_parameters(
