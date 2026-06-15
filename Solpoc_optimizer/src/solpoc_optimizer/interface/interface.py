@@ -9,6 +9,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import numpy as np
 import solpoc as sol
+from solpoc_optimizer.paths import PLAN_EXPERIENCE_DIR
 
 
 class SolpocInterface(tk.Tk):
@@ -595,7 +596,6 @@ class SolpocInterface(tk.Tk):
         # Charge et affiche le contenu du dossier plans_experiences
         self.refresh_summary()
 
-
     def select_template(self, template_name):
 
         self.selected_template = template_name
@@ -652,7 +652,7 @@ class SolpocInterface(tk.Tk):
         # Récupère la liste des paramètres pour ce template
         parameters = self.templates_config[self.selected_template]
 
-        # Création des groupes de parametres 
+        # Création des groupes de parametres
         groups = [
             ["Comment"],
             ["algo", "pop_size", "mutation_DE", "crossover_rate"],
@@ -660,7 +660,7 @@ class SolpocInterface(tk.Tk):
             ["nb_run", "cpu_used", "seed"],
             ["Mat_Stack", "Wl (start, stop, step)", "Ang (°)", "nb_layer"],
             ["selection", "cost_function"],
-            ["n_range (min, max)", "Th_range (min, max)", "Th_Substrate (nm)"]
+            ["n_range (min, max)", "Th_range (min, max)", "Th_Substrate (nm)"],
         ]
 
         # Priority
@@ -712,7 +712,7 @@ class SolpocInterface(tk.Tk):
             scroll_frame.grid_columnconfigure(0, weight=1)
 
             groupe_frame.grid(
-                row = current_row,
+                row=current_row,
                 column=0,
                 columnspan=10,
                 sticky="ew",
@@ -723,12 +723,12 @@ class SolpocInterface(tk.Tk):
             for col_index, param_name in enumerate(visibles_param):
                 col = col_index * 3
 
-            # Label du paramètre
+                # Label du paramètre
                 self.create_label(groupe_frame, param_name).grid(
                     row=0, column=col, padx=10, pady=8, sticky="w"
                 )
 
-            # Type du paramètre
+                # Type du paramètre
                 param_type = self.param_type.get(param_name, "text")
 
                 # Champ de saisie (spéciaux)
@@ -778,31 +778,26 @@ class SolpocInterface(tk.Tk):
                     entry_max.pack(side="left")
 
                     entry.entries = [entry_min, entry_max]
-                
+
                 elif param_name == "Comment":
                     entry = tk.Entry(groupe_frame, width=150)
 
                 else:
                     entry = tk.Entry(groupe_frame, width=14)
 
-                entry.grid(
-                    row=0, 
-                    column=col + 1, 
-                    padx=10, 
-                    pady=8,
-                    sticky="w")
-                
+                entry.grid(row=0, column=col + 1, padx=10, pady=8, sticky="w")
+
                 if col_index < len(visibles_param) - 1:
                     separator = tk.Label(
-                    groupe_frame,
-                    text="|",
-                    fg="#777",
-                    bg="black",
-                    font=("Arial", 12, "bold")
+                        groupe_frame,
+                        text="|",
+                        fg="#777",
+                        bg="black",
+                        font=("Arial", 12, "bold"),
                     )
                     separator.grid(
-                        row = 0,
-                        column= col + 2,
+                        row=0,
+                        column=col + 2,
                         padx=8,
                         pady=8,
                         sticky="w",
@@ -831,13 +826,12 @@ class SolpocInterface(tk.Tk):
 
                     elif isinstance(entry, ttk.Combobox):
                         entry.set(default_value)
-                        
+
                     else:
                         entry.insert(0, default_value)
 
                 self.parameter_entries[param_name] = entry
             current_row += 1
-
 
         # --- Boutons du bas ---
         bottom_frame = tk.Frame(container, bg="black")
@@ -1318,14 +1312,14 @@ class SolpocInterface(tk.Tk):
             experiment[json_key] = self.parse_value(text_value.strip(), json_key)
 
         # Crée le dossier de sauvegarde si nécessaire
-        folder = os.path.join("..", "experiences_scheduler", "plan_experience")
-        os.makedirs(folder, exist_ok=True)
+        folder = PLAN_EXPERIENCE_DIR
+        folder.mkdir(parents=True, exist_ok=True)
 
         # Nom du fichier : Template_priorité_Prénom_Nom_date_heure.json
         template_slug = self.selected_template.replace(" ", "_")
         timestamp = datetime.now().strftime("%Y-%m-%d_%Hh%Mm%Ss_%f")
         filename = f"{template_slug}_{timestamp}_{priority}.json"
-        filepath = os.path.join(folder, filename)
+        filepath = folder / filename
 
         # Sauvegarde en JSON indenté (lisible)
         with open(filepath, "w", encoding="utf-8") as f:
@@ -1342,17 +1336,17 @@ class SolpocInterface(tk.Tk):
 
         self.summary_text.delete("1.0", tk.END)
 
-        folder = os.path.join("..", "experiences_scheduler", "plan_experience")
+        folder = PLAN_EXPERIENCE_DIR
 
         # Dossier inexistant → message vide
-        if not os.path.exists(folder):
+        if not folder.exists():
             self.summary_text.insert(
                 tk.END, "No experimental designs have been saved yet."
             )
             return
 
         # Liste les fichiers JSON triés par nom (horodatés → triés par date)
-        files = sorted(f for f in os.listdir(folder) if f.endswith(".json"))
+        files = sorted(f.name for f in folder.glob("*.json"))
 
         if not files:
             self.summary_text.insert(
@@ -1390,7 +1384,7 @@ class SolpocInterface(tk.Tk):
 
         # Affiche chaque plan avec ses paramètres non nuls
         for i, filename in enumerate(files, start=1):
-            filepath = os.path.join(folder, filename)
+            filepath = folder / filename
             with open(filepath, "r", encoding="utf-8") as f:
                 exp = json.load(f)
 

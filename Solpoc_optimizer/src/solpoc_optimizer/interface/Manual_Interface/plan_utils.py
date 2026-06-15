@@ -1,4 +1,5 @@
 import os
+from solpoc_optimizer.paths import PLAN_EXPERIENCE_DIR
 import json
 from datetime import datetime
 
@@ -151,13 +152,13 @@ def generate_json(local_vars, template_name, priority):
             experiment[json_key] = parse_value(local_vars[var], json_key)
 
     # dossier plans_experiences/ à la racine de SolPOC
-    folder = os.path.join(os.path.dirname(__file__), "..", "plans_experiences")
-    os.makedirs(folder, exist_ok=True)
+    folder = PLAN_EXPERIENCE_DIR
+    folder.mkdir(parents=True, exist_ok=True)
 
     template_slug = template_name.replace(" ", "_")
     timestamp = datetime.now().strftime("%Y-%m-%d_%Hh%Mm%Ss")
     filename = f"{template_slug}_{timestamp}_{priority}.json"
-    filepath = os.path.join(folder, filename)
+    filepath = folder / filename
 
     with open(filepath, "w", encoding="utf-8") as f:
         json.dump(experiment, f, indent=4, ensure_ascii=False)
