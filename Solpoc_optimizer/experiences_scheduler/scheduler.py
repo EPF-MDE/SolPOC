@@ -17,7 +17,9 @@ import sys
 # import importlib
 
 
+# Ensure package imports work when running this script directly: add parent and project root
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 from tests.hachage_test import (
     hash_plan,
@@ -25,6 +27,7 @@ from tests.hachage_test import (
     register_executed_plan,
     is_already_executed,
 )
+
 """
 
 
@@ -52,7 +55,6 @@ Launch :
 
         python -m Solpoc_optimizer.experiences_scheduler.projet_final
 """
-
 
 
 try:
@@ -289,6 +291,99 @@ def run_problem_solution(args):
     return best_solution, perf, dev, n_iter, temps, seed
 
 
+def _run_bragg_flow(parameters, directory, nb_run, algo, cost_function, selection):
+    """
+    Exécution séquentielle inspirée de template_Bragg_mirror.py.
+    Lance nb_run optimisations, garde la meilleure, génère tous les plots.
+    """
+    results = []
+
+    for i, seed in enumerate(parameters["seed_list"]):
+        t1 = time.time()
+
+        this_run_params = parameters.copy()
+        this_run_params["seed"] = seed
+
+        best_solution, dev, n_iter, seed_used = algo(
+            cost_function, selection, this_run_params
+        )
+
+        t2 = time.time()
+        temps = t2 - t1
+
+        best_solution = np.array(best_solution)
+        dev = np.array(dev)
+        perf = cost_function(best_solution, parameters)
+
+        print(
+            f"I finished case #{i + 1} in {temps:.1f} seconds. Best: {perf:.4f}",
+            flush=True,
+        )
+        results.append((best_solution, perf, dev, n_iter, temps, seed_used))
+
+    # Meilleure solution globale (perf maximale)
+    best_result = max(results, key=lambda x: x[1])
+    best_solution_overall = best_result[0]
+
+    # Structure attendue par les fonctions sol.*
+    Experience_results = {
+        "tab_perf": [r[1] for r in results],
+        "tab_dev": [r[2] for r in results],
+        "tab_best_solution": [r[0] for r in results],
+        "tab_n_iter": [r[3] for r in results],
+        "tab_temps": [r[4] for r in results],
+        "tab_seed": [r[5] for r in results],
+        "Comment": parameters.get("Comment", ""),
+        "language": "en",
+        "name_Sol_Spec": parameters.get("name_Sol_Spec"),
+        "launch_time": datetime.now().strftime("%Y-%m-%d_%Hh%Mm%Ss"),
+        "cpu_used": 1,
+        "nb_run": nb_run,
+        # Clé utilisée par Stack_plot
+        "d_Stack": best_solution_overall,
+    }
+
+    parameters.update({"time_real": sum(r[4] for r in results)})
+
+    # ── Fichiers texte ──────────────────────────────────────────────────────
+    try:
+        sol.Explain_results(parameters, Experience_results)
+        sol.Convergences_txt(parameters, Experience_results, directory)
+        sol.Generate_txt(parameters, Experience_results, directory)
+        sol.Optimization_txt(parameters, Experience_results, directory)
+        sol.Generate_materials_txt(parameters, Experience_results, directory)
+    except Exception as e:
+        print(f"[WARN] Fichiers texte : {e}")
+
+    # ── Courbes RTA ─────────────────────────────────────────────────────────
+    try:
+        sol.Reflectivity_plot(parameters, Experience_results, directory)
+        sol.Transmissivity_plot(parameters, Experience_results, directory)
+        sol.OpticalStackResponse_plot(parameters, Experience_results, directory)
+    except Exception as e:
+        print(f"[WARN] Plots RTA : {e}")
+
+    # ── Courbes de convergence ───────────────────────────────────────────────
+    try:
+        sol.Convergence_plots(parameters, Experience_results, directory)
+        sol.Convergence_plots_2(parameters, Experience_results, directory)
+    except Exception as e:
+        print(f"[WARN] Convergence plots : {e}")
+
+    # ── Courbe de cohérence ──────────────────────────────────────────────────
+    try:
+        sol.Consistency_curve_plot(parameters, Experience_results, directory)
+    except Exception as e:
+        print(f"[WARN] Consistency curve : {e}")
+
+    # ── Stack ────────────────────────────────────────────────────────────────
+    try:
+        sol.Stack_plot(parameters, Experience_results, directory)
+        print("Graphique de la pile sauvegardé.")
+    except Exception as e:
+        print(f"[WARN] Stack plot : {e}")
+
+
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
@@ -456,6 +551,7 @@ if __name__ == "__main__":
         # print(f"n_range : {params['n_range']}")
         # print(params)
         parameters = sol.get_parameters(**params)
+        print(f"name_Sol_Spec dans parameters : {parameters.get('name_Sol_Spec')}")
         nb_run = params.get("nb_run", 1)
 
         # Lire cpu_used depuis le JSON, par défaut 4 si la clé est absente ou non convertible
@@ -481,17 +577,26 @@ if __name__ == "__main__":
 
         # Exécuter le main pour cette ligne
         try:
-            main_for_parameters(
-                parameters,
-                nb_run,
-                launch_time_global,
-                Comment,
-                name_Sol_Spec,
-                cpu_used,
-                algo=algo,
-                cost_function=cost_function,
-                selection=selection,
-            )
+            # Special handling for certain example templates
+            t_lower = (template_name or "").lower()
+            print(f"Processing template: {template_name}")
+            if "bragg" in t_lower:
+                print("#" * 1000)
+                _run_bragg_flow(
+                    parameters, str(directory), nb_run, algo, cost_function, selection
+                )
+            else:
+                main_for_parameters(
+                    parameters,
+                    nb_run,
+                    launch_time_global,
+                    Comment,
+                    name_Sol_Spec,
+                    cpu_used,
+                    algo=algo,
+                    cost_function=cost_function,
+                    selection=selection,
+                )
             # Si réussi, déplacer vers plan_executer
             (PLAN_EXPERIENCE_DIR / first_min_row["filename"]).rename(
                 PLAN_EXECUTER_DIR / first_min_row["filename"]

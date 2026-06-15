@@ -62,7 +62,10 @@ def load_hashes_db(hashes_file: Path | str = None) -> dict:
         return {}
 
     with open(hashes_file, "r", encoding="utf-8") as f:
-        return json.load(f)
+        content = f.read().strip()
+        if not content:
+            return {}
+        return json.loads(content)
 
 
 def save_hashes_db(hashes_db: dict, hashes_file: Path | str = None) -> None:
