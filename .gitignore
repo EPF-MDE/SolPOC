@@ -175,3 +175,5 @@ cython_debug/
 *.txt
 
 experiences_scheduler/2026-*/
+
+*.json
