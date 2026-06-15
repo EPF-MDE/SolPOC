@@ -5,7 +5,7 @@ matplotlib.use("Agg")  # Backend non-interactif (pas d'affichage)
 import matplotlib.pyplot as plt
 import time
 import os
-from pathlib import Path
+import re
 import solpoc as sol
 
 
@@ -14,6 +14,9 @@ from multiprocessing import Pool
 import json
 import ast
 import sys
+
+from contextlib import contextmanager
+from pathlib import Path
 # import importlib
 
 
@@ -21,7 +24,7 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
-from tests.hachage_test import (
+from solpoc_optimizer.hashing import (
     hash_plan,
     load_hashes_db,
     register_executed_plan,
@@ -29,7 +32,8 @@ from tests.hachage_test import (
 )
 
 
-from Solpoc_optimizer.paths import (
+from solpoc_optimizer.paths import (
+    WORKSPACE_DIR,
     PLAN_EXPERIENCE_DIR,
     PLAN_EXECUTED_DIR,
     PLAN_FAILED_DIR,
@@ -68,10 +72,11 @@ Launch :
 
 
 try:
-    import function_R_s_weighted as test
-except ImportError:
+    from solpoc_optimizer.new_functions import function_R_s_weighted as test
+except ImportError as error:
     print(
-        "WARNING: function_R_s_weighted module not found. Falling back to sol module."
+        "WARNING: function_R_s_weighted module not found. "
+        f"Falling back to sol module. Details: {error}"
     )
     test = sol
 
@@ -163,6 +168,28 @@ class NumpyEncoder(json.JSONEncoder):
         return super().default(obj)
 
 
+@contextmanager
+def working_directory(directory: Path):
+    """
+    Change temporairement le dossier courant,
+    puis revient au dossier initial.
+    """
+
+    previous_directory = Path.cwd()
+
+    directory.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    os.chdir(directory)
+
+    try:
+        yield
+    finally:
+        os.chdir(previous_directory)
+
+
 def main_for_parameters(
     parameters,
     nb_run,
@@ -175,7 +202,8 @@ def main_for_parameters(
     selection,
 ):
     directory = parameters["directory"]
-    sol.run_main(parameters)
+    with working_directory(WORKSPACE_DIR):
+        sol.run_main(parameters)
 
     mp_pool = Pool(cpu_used)
     tasks = [(i, parameters, algo, cost_function, selection) for i in range(nb_run)]
@@ -394,20 +422,67 @@ def _run_bragg_flow(parameters, directory, nb_run, algo, cost_function, selectio
         print(f"[WARN] Stack plot : {e}")
 
 
+def remove_empty_run_directories() -> None:
+    """Supprime les anciens dossiers vides présents dans runs."""
+
+    if not RUNS_DIR.exists():
+        return
+
+    for item in sorted(
+        RUNS_DIR.rglob("*"),
+        key=lambda path: len(path.parts),
+        reverse=True,
+    ):
+        if not item.is_dir():
+            continue
+
+        try:
+            item.rmdir()  # Fonctionne uniquement si le dossier est vide
+            print(f"Ancien dossier vide supprimé : {item}")
+        except OSError:
+            pass
+
+
+SOLPOC_DIRECTORY_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}-\d{2}h\d{2}(?:-\d+)?$")
+
+
+def remove_empty_solpoc_directories() -> None:
+    """
+    Supprime les dossiers vides créés automatiquement par SolPOC
+    directement dans experiences_scheduler.
+    """
+
+    if not WORKSPACE_DIR.exists():
+        return
+
+    for item in WORKSPACE_DIR.iterdir():
+        if not item.is_dir():
+            continue
+
+        # Ne sélectionne que les dossiers du type :
+        # 2026-06-15-12h36
+        # 2026-06-15-12h36-2
+        if not SOLPOC_DIRECTORY_PATTERN.fullmatch(item.name):
+            continue
+
+        try:
+            item.rmdir()  # Fonctionne uniquement si le dossier est vide
+            print(f"Dossier SolPOC vide supprimé : {item}")
+        except OSError:
+            # Le dossier contient des fichiers, on le conserve.
+            pass
+
+
 # ---------------------------------------------------------------------------
 
-if __name__ == "__main__":
+
+def main() -> int:
+    create_project_directories()
+    remove_empty_run_directories()
+    remove_empty_solpoc_directories()
+
     running = True
     launch_time_global = datetime.now().strftime("%Y-%m-%d_%Hh%Mm%Ss")
-
-    # ────────────────────────────────────────────────────────────────────────
-    # Définir les chemins une fois pour toutes, relatifs à ce script
-    # ────────────────────────────────────────────────────────────────────────
-
-    PLAN_EXPERIENCE_DIR.mkdir(exist_ok=True)
-    PLAN_FAILED_DIR.mkdir(exist_ok=True)
-    PLAN_EXECUTED_DIR.mkdir(exist_ok=True)
-    RUNS_DIR.mkdir(exist_ok=True)
 
     # ── POINT 1 : charger le cache des hashes au démarrage ──────────────────
     hashes_db = load_hashes_db(HASHES_FILE) or {}
@@ -444,6 +519,10 @@ if __name__ == "__main__":
         name_Sol_Spec = None
         name_PV = None
 
+        algo = None
+        cost_function = None
+        selection = None
+
         if not plans:
             running = False
             print("Aucune ligne restante à traiter. Fin de la boucle.")
@@ -471,7 +550,7 @@ if __name__ == "__main__":
         original_row = first_min_row.copy()
 
         # Initialisation of parameter Comment
-        Comment = first_min_row["Comment"]
+        Comment = first_min_row.get("Comment", "")
 
         # changement des variable a modifier
         first_min_row["Wl"] = build_wl(first_min_row["Wl"])
@@ -623,9 +702,21 @@ if __name__ == "__main__":
     # Fermer toutes les figures matplotlib pour éviter la fuite mémoire
     plt.close("all")
 
-    # Supprimer les dossiers vides créés en dehors de runs
-print(f"RUNS_DIR : {RUNS_DIR}")
+    # Nettoyage après la fin de toutes les expériences
+    remove_empty_run_directories()
+    remove_empty_solpoc_directories()
 
+    return 0
+
+
+# ---------------------------------------------------------------------------
+
+if __name__ == "__main__":
+    from multiprocessing import freeze_support
+
+    freeze_support()
+    raise SystemExit(main())
+"""
 if RUNS_DIR.exists():
     for item in RUNS_DIR.iterdir():
         if item.is_dir() and item.name.startswith("2026-"):
@@ -635,6 +726,7 @@ if RUNS_DIR.exists():
             except OSError:
                 pass  # Le dossier n'est pas vide
 
+                
     # Supprimer les dossiers vides à l'intérieur de runs
     if RUNS_DIR.exists():
         for item in sorted(
@@ -646,7 +738,7 @@ if RUNS_DIR.exists():
                     print(f"Dossier vide supprimé dans runs : {item}")
                 except OSError:
                     pass  # Pas vide ou impossible à supprimer
-
+"""
 
 # IMPORTANT
 # Tout les paramètres ne sont pas dans la fonctions get_parameters comme Wl_Sol, Sol_Spec, name_Sol_Spec
