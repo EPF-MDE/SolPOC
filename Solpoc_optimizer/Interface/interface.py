@@ -329,7 +329,7 @@ class SolpocInterface(tk.Tk):
 
         # Chemin vers le fichier template (dossier Examples/)
         filepath = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "..", "Plans", filename
+            os.path.dirname(os.path.abspath(__file__)), "Manual_Interface", filename
         )
 
         if not os.path.exists(filepath):
@@ -721,12 +721,11 @@ class SolpocInterface(tk.Tk):
             )
 
             for col_index, param_name in enumerate(visibles_param):
-            
                 col = col_index * 3
 
             # Label du paramètre
                 self.create_label(groupe_frame, param_name).grid(
-                    row=current_row, column=col, padx=10, pady=8, sticky="w"
+                    row=0, column=col, padx=10, pady=8, sticky="w"
                 )
 
             # Type du paramètre
@@ -787,7 +786,7 @@ class SolpocInterface(tk.Tk):
                     entry = tk.Entry(groupe_frame, width=14)
 
                 entry.grid(
-                    row=current_row, 
+                    row=0, 
                     column=col + 1, 
                     padx=10, 
                     pady=8,
@@ -802,7 +801,7 @@ class SolpocInterface(tk.Tk):
                     font=("Arial", 12, "bold")
                     )
                     separator.grid(
-                        row = current_row,
+                        row = 0,
                         column= col + 2,
                         padx=8,
                         pady=8,
@@ -829,8 +828,12 @@ class SolpocInterface(tk.Tk):
                         if len(parts) == 2:
                             entry.entries[0].insert(0, parts[0])
                             entry.entries[1].insert(0, parts[1])
+
+                    elif isinstance(entry, ttk.Combobox):
+                        entry.set(default_value)
+                        
                     else:
-                            entry.insert(0, default_value)
+                        entry.insert(0, default_value)
 
                 self.parameter_entries[param_name] = entry
             current_row += 1
@@ -1295,8 +1298,7 @@ class SolpocInterface(tk.Tk):
             "seed": "seed",
             "d_Stack_Opt": "d_Stack_Opt",
             "Lambda_cut_1 (nm)": "Lambda_cut_1",
-            "lambda_cut_1 (nm)": "lambda_cut_1",
-            "lambda_cut_2 (nm)": "lambda_cut_2",
+            "Lambda_cut_2 (nm)": "lambda_cut_2",
             "Mat_Option": "Mat_Option",
             "Mode_choose_material": "Mode_choose_material",
             "vf_range (min, max)": "vf_range",
