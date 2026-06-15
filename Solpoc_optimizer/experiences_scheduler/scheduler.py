@@ -28,6 +28,16 @@ from tests.hachage_test import (
     is_already_executed,
 )
 
+
+from Solpoc_optimizer.paths import (
+    PLAN_EXPERIENCE_DIR,
+    PLAN_EXECUTED_DIR,
+    PLAN_FAILED_DIR,
+    RUNS_DIR,
+    HASHES_FILE,
+    create_project_directories,
+)
+
 """
 
 
@@ -393,25 +403,14 @@ if __name__ == "__main__":
     # ────────────────────────────────────────────────────────────────────────
     # Définir les chemins une fois pour toutes, relatifs à ce script
     # ────────────────────────────────────────────────────────────────────────
-    BASE_DIR = Path(__file__).resolve().parent
-
-    PROJECT_ROOT = BASE_DIR.parents[1]
-
-    print(f"PROJECT_ROOT : {PROJECT_ROOT}")
-
-    PLAN_EXPERIENCE_DIR = BASE_DIR / "plan_experience"
-    PLAN_EXECUTER_DIR = BASE_DIR / "plan_executer"
-    PLAN_FAILED_DIR = BASE_DIR / "plan_failed"
-    RUNS_DIR = BASE_DIR / "runs"
-    HASH_FILE = PLAN_EXECUTER_DIR / "hashes.json"
 
     PLAN_EXPERIENCE_DIR.mkdir(exist_ok=True)
     PLAN_FAILED_DIR.mkdir(exist_ok=True)
-    PLAN_EXECUTER_DIR.mkdir(exist_ok=True)
+    PLAN_EXECUTED_DIR.mkdir(exist_ok=True)
     RUNS_DIR.mkdir(exist_ok=True)
 
     # ── POINT 1 : charger le cache des hashes au démarrage ──────────────────
-    hashes_db = load_hashes_db(HASH_FILE) or {}
+    hashes_db = load_hashes_db(HASHES_FILE) or {}
     """
     if hashes_db:
         print(f"Cache chargé : {len(hashes_db)} experience(s) déjà exécutée(s).")
@@ -464,7 +463,7 @@ if __name__ == "__main__":
             )
             # Déplacer quand même vers plan_executer pour ne pas le relancer
             (PLAN_EXPERIENCE_DIR / first_min_row["filename"]).rename(
-                PLAN_EXECUTER_DIR / first_min_row["filename"]
+                PLAN_EXECUTED_DIR / first_min_row["filename"]
             )
             continue
         # ────────────────────────────────────────────────────────────────────
@@ -599,12 +598,12 @@ if __name__ == "__main__":
                 )
             # Si réussi, déplacer vers plan_executer
             (PLAN_EXPERIENCE_DIR / first_min_row["filename"]).rename(
-                PLAN_EXECUTER_DIR / first_min_row["filename"]
+                PLAN_EXECUTED_DIR / first_min_row["filename"]
             )
 
             # ── POINT 3 : enregistrer le hash après succès ───────────────────
             register_executed_plan(
-                plan_hash, first_min_row["filename"], hashes_db, HASH_FILE
+                plan_hash, first_min_row["filename"], hashes_db, HASHES_FILE
             )
             print(
                 f"[HASH] Plan '{first_min_row['filename']}' enregistré (hash: {plan_hash[:8]}…)."
@@ -625,24 +624,16 @@ if __name__ == "__main__":
     plt.close("all")
 
     # Supprimer les dossiers vides créés en dehors de runs
-    print(f"BASE_DIR : {BASE_DIR}")
-    for item in PROJECT_ROOT.iterdir():
-        if (
-            item.is_dir()
-            and not item.name.startswith("runs")
-            and item.name.startswith("2026-")
-            and item.name
-            not in [
-                PLAN_EXPERIENCE_DIR.name,
-                PLAN_EXECUTER_DIR.name,
-                PLAN_FAILED_DIR.name,
-            ]
-        ):
+print(f"RUNS_DIR : {RUNS_DIR}")
+
+if RUNS_DIR.exists():
+    for item in RUNS_DIR.iterdir():
+        if item.is_dir() and item.name.startswith("2026-"):
             try:
-                item.rmdir()  # Supprime seulement si vide
+                item.rmdir()  # Supprime uniquement le dossier s'il est vide
                 # print(f"Dossier vide supprimé : {item.name}")
             except OSError:
-                pass  # Pas vide, on passe
+                pass  # Le dossier n'est pas vide
 
     # Supprimer les dossiers vides à l'intérieur de runs
     if RUNS_DIR.exists():
