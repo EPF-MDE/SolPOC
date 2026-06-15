@@ -1,8 +1,6 @@
 import json
 import os
-
 import pytest
-
 from Solpoc_optimizer.Interface.interface import SolpocInterface
 
 
@@ -31,7 +29,7 @@ TEST_VALUES = {
     "n_range (min, max)": "1.4, 2.4",
     "vf_range (min, max)": "0.1, 0.9",
     "nb_layer": "3",
-    "Ang (Â°)": "0",
+    "Ang (°)": "0",
     "pop_size": "30",
     "crossover_rate": "0.5",
     "f1": "0.9",
@@ -60,7 +58,7 @@ UI_LABEL_TO_JSON_KEY = {
     "Th_range (min, max)": "Th_range",
     "n_range (min, max)": "n_range",
     "vf_range (min, max)": "vf_range",
-    "Ang (Â°)": "Ang",
+    "Ang (°)": "Ang",
     "Lambda_cut_1 (nm)": "Lambda_cut_1",
     "T_air (K)": "T_air",
     "T_abs (K)": "T_abs",
@@ -82,7 +80,7 @@ def make_interface(template):
             "Th_range (min, max)",
             "n_range (min, max)",
             "nb_layer",
-            "Ang (Â°)",
+            "Ang (°)",
             "pop_size",
             "crossover_rate",
             "f1",
@@ -101,7 +99,7 @@ def make_interface(template):
             "Wl (start, stop, step)",
             "Th_Substrate (nm)",
             "Th_range (min, max)",
-            "Ang (Â°)",
+            "Ang (°)",
             "pop_size",
             "crossover_rate",
             "f1",
@@ -120,7 +118,7 @@ def make_interface(template):
             "Wl (start, stop, step)",
             "Th_Substrate (nm)",
             "Th_range (min, max)",
-            "Ang (Â°)",
+            "Ang (°)",
             "d_Stack_Opt",
             "Lambda_cut_1 (nm)",
             "pop_size",
@@ -142,7 +140,7 @@ def make_interface(template):
             "Th_range (min, max)",
             "Th_Substrate (nm)",
             "Wl (start, stop, step)",
-            "Ang (Â°)",
+            "Ang (°)",
             "pop_size",
             "crossover_rate",
             "f1",
@@ -161,7 +159,7 @@ def make_interface(template):
             "Th_Substrate (nm)",
             "Th_range (min, max)",
             "vf_range (min, max)",
-            "Ang (Â°)",
+            "Ang (°)",
             "pop_size",
             "crossover_rate",
             "f1",
@@ -180,7 +178,7 @@ def make_interface(template):
             "Th_Substrate (nm)",
             "Th_range (min, max)",
             "vf_range (min, max)",
-            "Ang (Â°)",
+            "Ang (°)",
             "C",
             "T_air (K)",
             "T_abs (K)",
@@ -204,7 +202,7 @@ def make_interface(template):
             "Th_Substrate (nm)",
             "Th_range (min, max)",
             "vf_range (min, max)",
-            "Ang (Â°)",
+            "Ang (°)",
             "lambda_cut_1 (nm)",
             "lambda_cut_2 (nm)",
             "pop_size",
@@ -222,7 +220,7 @@ def make_interface(template):
             "d_Stack",
             "vf",
             "Wl (start, stop, step)",
-            "Ang (Â°)",
+            "Ang (°)",
         ],
     }
     return interface
