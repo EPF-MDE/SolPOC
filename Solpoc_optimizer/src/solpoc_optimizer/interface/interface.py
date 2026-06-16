@@ -2,7 +2,6 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 import json
 import re
-import os
 import ast
 from datetime import datetime
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -11,6 +10,14 @@ import numpy as np
 import solpoc as sol
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
+
+from solpoc_optimizer.init_project import initialize_workspace
+from solpoc_optimizer.paths import (
+    MANUAL_PLANS_DIR,
+    PLAN_EXPERIENCE_DIR,
+    USER_NEW_FUNCTIONS_DIR,
+    create_project_directories,
+)
 
 
 class SolpocInterface(tk.Tk):
@@ -329,15 +336,25 @@ class SolpocInterface(tk.Tk):
         if not filename:
             return {}
 
-        # Chemin vers le fichier template (dossier Manual_Interface/)
-        filepath = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "Manual_Interface", filename
-        )
+        # Le template est lu depuis la copie modifiable du workspace utilisateur.
+        filepath = MANUAL_PLANS_DIR / filename
 
-        if not os.path.exists(filepath):
+        # Si le fichier manque, on tente de recopier les ressources d'origine
+        # sans écraser les fichiers déjà modifiés par l'utilisateur.
+        if not filepath.exists():
+            initialize_workspace(overwrite=False)
+
+        if not filepath.exists():
+            messagebox.showwarning(
+                "Template not found",
+                (
+                    f"The template file '{filename}' could not be found.\n\n"
+                    f"Expected location:\n{filepath}"
+                ),
+            )
             return {}
 
-        with open(filepath, "r", encoding="utf-8") as f:
+        with filepath.open("r", encoding="utf-8") as f:
             content = f.read()
 
             # Ignore tout ce qui suit la zone modifiable
@@ -1315,42 +1332,41 @@ class SolpocInterface(tk.Tk):
             json_key = ui_label_to_json_key.get(ui_label, ui_label)
             experiment[json_key] = self.parse_value(text_value.strip(), json_key)
 
-        # Crée le dossier de sauvegarde si nécessaire
-        folder = os.path.join("..", "experiences_scheduler", "plan_experience")
-        os.makedirs(folder, exist_ok=True)
+        # Crée le dossier de sauvegarde défini dans paths.py si nécessaire.
+        PLAN_EXPERIENCE_DIR.mkdir(parents=True, exist_ok=True)
 
-        # Nom du fichier : Template_priorité_date_heure.json
+        # Nom du fichier : Template_date_heure_priorité.json
         template_slug = self.selected_template.replace(" ", "_")
         timestamp = datetime.now().strftime("%Y-%m-%d_%Hh%Mm%Ss_%f")
         filename = f"{template_slug}_{timestamp}_{priority}.json"
-        filepath = os.path.join(folder, filename)
+        filepath = PLAN_EXPERIENCE_DIR / filename
 
-        # Sauvegarde en JSON indenté (lisible)
-        with open(filepath, "w", encoding="utf-8") as f:
+        # Sauvegarde en JSON indenté (lisible).
+        with filepath.open("w", encoding="utf-8") as f:
             json.dump(experiment, f, indent=4, ensure_ascii=False)
 
-        return filepath
+        return str(filepath)
 
     # ------------------------------------------------------------------
     # AFFICHAGE DU RÉSUMÉ DES PLANS ENREGISTRÉS
     # ------------------------------------------------------------------
     def refresh_summary(self):
-        """Lit tous les fichiers JSON du dossier plans_experiences
-        et les affiche dans la zone de résumé de la page Template."""
+        """Lit les plans JSON du workspace et les affiche dans le résumé."""
 
         self.summary_text.delete("1.0", tk.END)
 
-        folder = os.path.join("..", "experiences_scheduler", "plan_experience")
-
-        # Dossier inexistant → message vide
-        if not os.path.exists(folder):
+        # Les plans sont maintenant centralisés dans paths.py.
+        if not PLAN_EXPERIENCE_DIR.exists():
             self.summary_text.insert(
                 tk.END, "No experimental designs have been saved yet."
             )
             return
 
-        # Liste les fichiers JSON triés par nom (horodatés → triés par date)
-        files = sorted(f for f in os.listdir(folder) if f.endswith(".json"))
+        # Liste les fichiers JSON triés par nom.
+        files = sorted(
+            PLAN_EXPERIENCE_DIR.glob("*.json"),
+            key=lambda path: path.name,
+        )
 
         if not files:
             self.summary_text.insert(
@@ -1358,7 +1374,7 @@ class SolpocInterface(tk.Tk):
             )
             return
 
-        # Clés internes à ne pas afficher dans le résumé (non pertinentes pour l'utilisateur)
+        # Clés internes à ne pas afficher dans le résumé.
         meta_keys = {
             "template",
             "Comment",
@@ -1386,31 +1402,33 @@ class SolpocInterface(tk.Tk):
             "d_Stack",
         }
 
-        # Affiche chaque plan avec ses paramètres non nuls
-        for i, filename in enumerate(files, start=1):
-            filepath = os.path.join(folder, filename)
-            with open(filepath, "r", encoding="utf-8") as f:
+        for i, filepath in enumerate(files, start=1):
+            filename = filepath.name
+
+            with filepath.open("r", encoding="utf-8") as f:
                 exp = json.load(f)
 
-            # La priorité est le dernier segment du nom de fichier
-            priority_from_filename = filename.replace(".json", "").split("_")[-1]
+            # La priorité est le dernier segment du nom de fichier.
+            priority_from_filename = filepath.stem.split("_")[-1]
 
             self.summary_text.insert(tk.END, "─" * 60 + "\n")
             self.summary_text.insert(
                 tk.END, f"  Plan {i} : {exp.get('template', '?')}\n"
             )
             self.summary_text.insert(tk.END, f"  File: {filename}\n")
-            self.summary_text.insert(tk.END, f"  Comment: {exp.get('Comment', '')}\n")
-            self.summary_text.insert(tk.END, f"  Priority : {priority_from_filename}\n")
-            self.summary_text.insert(tk.END, f"\n")
+            self.summary_text.insert(
+                tk.END, f"  Comment: {exp.get('Comment', '')}\n"
+            )
+            self.summary_text.insert(
+                tk.END, f"  Priority : {priority_from_filename}\n\n"
+            )
 
-            # Affiche uniquement les paramètres renseignés (valeur non None)
             for key, value in exp.items():
                 if key in meta_keys or value is None:
                     continue
                 self.summary_text.insert(tk.END, f"    • {key} : {value}\n")
 
-            self.summary_text.insert(tk.END, f"\n")
+            self.summary_text.insert(tk.END, "\n")
 
         self.summary_text.insert(tk.END, "─" * 60 + "\n")
 
@@ -1915,6 +1933,34 @@ class SolpocInterface(tk.Tk):
             pass
 
 
-if __name__ == "__main__":
+def main() -> int:
+    """Initialise le workspace puis lance l'interface graphique."""
+
+    # Crée la structure du workspace si elle n'existe pas encore.
+    create_project_directories()
+
+    # On vérifie qu'il existe au moins un vrai template et une vraie
+    # fonction utilisateur, sans compter les éventuels __init__.py.
+    manual_templates_available = any(
+        path.is_file() and path.name != "__init__.py"
+        for path in MANUAL_PLANS_DIR.iterdir()
+    )
+
+    custom_functions_available = any(
+        path.is_file() and path.name != "__init__.py"
+        for path in USER_NEW_FUNCTIONS_DIR.iterdir()
+    )
+
+    # Copie seulement les fichiers manquants. Les modifications utilisateur
+    # déjà présentes dans le workspace ne sont pas écrasées.
+    if not manual_templates_available or not custom_functions_available:
+        initialize_workspace(overwrite=False)
+
     app = SolpocInterface()
     app.mainloop()
+
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

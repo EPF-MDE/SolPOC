@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.9"
 
 authors = [
-    { name = "Alexiane Feuillet" }
+    { name = "Team solpoc" }
 ]
 
 dependencies = [
@@ -29,6 +29,8 @@ dev = [
 
 [project.scripts]
 solpoc-optimize = "solpoc_optimizer.cli:main"
+solpoc-interface = "solpoc_optimizer.interface.interface:main"
+solpoc-optimizer-init = "solpoc_optimizer.init_project:main"
 
 [tool.setuptools]
 include-package-data = true
