@@ -1,7 +1,7 @@
 import json
 import os
 import pytest
-from Solpoc_optimizer.Interface.interface import SolpocInterface
+from solpoc_optimizer.interface.interface import SolpocInterface
 
 
 TEMPLATES = [
@@ -60,6 +60,9 @@ UI_LABEL_TO_JSON_KEY = {
     "vf_range (min, max)": "vf_range",
     "Ang (°)": "Ang",
     "Lambda_cut_1 (nm)": "Lambda_cut_1",
+    "Lambda_cut_2 (nm)": "Lambda_cut_2",
+    "lambda_cut_1 (nm)": "lambda_cut_1",
+    "lambda_cut_2 (nm)": "lambda_cut_2",
     "T_air (K)": "T_air",
     "T_abs (K)": "T_abs",
 }
