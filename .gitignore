@@ -173,7 +173,3 @@ cython_debug/
 # Generated result files
 *.png
 *.txt
-
-experiences_scheduler/2026-*/
-
-
