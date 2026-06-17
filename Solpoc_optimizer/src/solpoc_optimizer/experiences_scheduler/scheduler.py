@@ -628,7 +628,39 @@ def main() -> int:
         # print(f"nb de layer : {params['nb_layer']}")
         # print(f"n_range : {params['n_range']}")
         # print(params)
-        parameters = sol.get_parameters(**params)
+        try:
+            parameters = sol.get_parameters(**params)
+
+        except Exception as error:
+            filename = first_min_row["filename"]
+
+            print(f"[ERROR] Impossible de préparer le plan '{filename}' : {error}")
+
+            source = PLAN_EXPERIENCE_DIR / filename
+            destination = PLAN_FAILED_DIR / filename
+
+            PLAN_FAILED_DIR.mkdir(
+                parents=True,
+                exist_ok=True,
+            )
+
+            try:
+                if destination.exists():
+                    destination.unlink()
+
+                if source.exists():
+                    source.rename(destination)
+
+                    print(f"[FAILED] Plan déplacé dans : {destination}")
+
+            except Exception as move_error:
+                print(
+                    f"[ERROR] Impossible de déplacer le plan "
+                    f"dans plan_failed : {move_error}"
+                )
+
+            continue
+
         print(f"name_Sol_Spec dans parameters : {parameters.get('name_Sol_Spec')}")
         nb_run = params.get("nb_run", 1)
 
