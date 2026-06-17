@@ -6,7 +6,7 @@ from plan_utils import generate_json
 #                   SCRIPT PARAMETERS - START                                #
 # ----------------------------------------------------------------------------#
 
-priority = 1
+priority = 2
 
 # Comment to be written in the simulation text file
 Comment = "A 4 periodic layers of Bragg mirror, deposited on 1mm BK7 glass"

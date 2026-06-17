@@ -184,77 +184,6 @@ def parse_value(value, json_key):
     return value
 
 
-import numpy as np
-
-
-def compact_wavelength_range(value) -> list:
-    """
-    Convertit un domaine de longueurs d'onde en format compact :
-
-        [début, fin, pas]
-
-    Exemple :
-        np.arange(400, 800, 5)
-        devient
-        [400, 800, 5]
-    """
-
-    # Le format est déjà compact
-    if isinstance(value, (list, tuple)) and len(value) == 3:
-        return [
-            parse_number(value[0]),
-            parse_number(value[1]),
-            parse_number(value[2]),
-        ]
-
-    wavelengths = np.asarray(value)
-
-    if wavelengths.ndim != 1:
-        raise ValueError("Wl doit être un tableau NumPy à une dimension.")
-
-    if wavelengths.size < 2:
-        raise ValueError(
-            "Wl doit contenir au moins deux longueurs d'onde pour déterminer le pas."
-        )
-
-    steps = np.diff(wavelengths)
-    step = steps[0]
-
-    # Vérification que le pas est constant
-    if not np.allclose(steps, step):
-        raise ValueError(
-            "Le domaine Wl n'est pas régulièrement espacé. "
-            "Il ne peut pas être converti au format "
-            "[début, fin, pas]."
-        )
-
-    start = wavelengths[0]
-
-    # np.arange exclut la borne supérieure.
-    # On la retrouve avec dernière valeur + pas.
-    stop = wavelengths[-1] + step
-
-    return [
-        parse_number(start),
-        parse_number(stop),
-        parse_number(step),
-    ]
-
-
-def parse_number(value):
-    """
-    Transforme un nombre NumPy en nombre Python compatible JSON.
-    """
-
-    if isinstance(value, np.generic):
-        value = value.item()
-
-    if isinstance(value, float) and value.is_integer():
-        return int(value)
-
-    return value
-
-
 def generate_json(
     local_vars: dict,
     template_name: str,
@@ -276,16 +205,9 @@ def generate_json(
     experiment["template"] = template_name
 
     for variable_name, json_key in VAR_TO_JSON.items():
-        if variable_name not in local_vars:
-            continue
-
-        value = local_vars[variable_name]
-
-        if variable_name == "Wl" or json_key == "Wl":
-            experiment[json_key] = compact_wavelength_range(value)
-        else:
+        if variable_name in local_vars:
             experiment[json_key] = parse_value(
-                value,
+                local_vars[variable_name],
                 json_key,
             )
 
