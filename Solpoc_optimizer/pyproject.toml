@@ -10,7 +10,10 @@ readme = "README.md"
 requires-python = ">=3.9"
 
 authors = [
-    { name = "Team solpoc" }
+    {name = "Antoine Grosjean", email = "antoine.grosjean@epf.fr"},
+    {name = "Guillaume de Montgolfier", email = "guillaume.demontgolfier@epfedu.fr"},
+    {name = "Yassine Garbi", email = "yasinne.garbi@epfeu=du.fr"},
+    {name = "Thalita Drumond", email = "thalita.drumond@epf.fr"}
 ]
 
 dependencies = [

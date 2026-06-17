@@ -39,7 +39,7 @@ def get_workspace_dir() -> Path:
     if custom_workspace:
         return Path(custom_workspace).expanduser().resolve()
 
-    return Path.home() / "SolPOC_Optimizer"
+    return Path.cwd() / "workspace"
 
 
 WORKSPACE_DIR = get_workspace_dir()
