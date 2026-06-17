@@ -283,11 +283,11 @@ def generate_json(
 
         if variable_name == "Wl" or json_key == "Wl":
             experiment[json_key] = compact_wavelength_range(value)
-    else:
-        experiment[json_key] = parse_value(
-            value,
-            json_key,
-        )
+        else:
+            experiment[json_key] = parse_value(
+                value,
+                json_key,
+            )
 
     # Sécurité supplémentaire :
     # le dossier plan_experience doit exister.
