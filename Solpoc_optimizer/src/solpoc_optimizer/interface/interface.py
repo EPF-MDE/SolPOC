@@ -1416,9 +1416,7 @@ class SolpocInterface(tk.Tk):
                 tk.END, f"  Plan {i} : {exp.get('template', '?')}\n"
             )
             self.summary_text.insert(tk.END, f"  File: {filename}\n")
-            self.summary_text.insert(
-                tk.END, f"  Comment: {exp.get('Comment', '')}\n"
-            )
+            self.summary_text.insert(tk.END, f"  Comment: {exp.get('Comment', '')}\n")
             self.summary_text.insert(
                 tk.END, f"  Priority : {priority_from_filename}\n\n"
             )
