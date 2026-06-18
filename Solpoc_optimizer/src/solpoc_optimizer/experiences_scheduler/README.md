@@ -1,7 +1,5 @@
 # SolPOC Optimizer
 
-<img width="1440" height="1240" alt="SolPOC Optimizer interface" src="https://github.com/user-attachments/assets/bf08c778-c20f-4fa0-84a5-87b9e8d0174f" />
-
 ## Overview
 
 **SolPOC Optimizer** is an experiment orchestration tool built on top of the SolPOC optical optimization library.

@@ -173,3 +173,8 @@ cython_debug/
 # Generated result files
 *.png
 *.txt
+
+
+# ignore workspace folder
+
+Solpoc_optimizer/workspace/
